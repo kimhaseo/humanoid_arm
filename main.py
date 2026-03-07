@@ -1,13 +1,11 @@
 """
-main.py — IK 계산 후 각 관절값을 모터로 전송.
+main.py — IK 계산 + MeshCat 시각화 후 각 관절값을 모터로 전송.
 """
 
 import logging
 import numpy as np
 
-from ik_solver import IKSolver
-from motor_controller import MotorController
-from config.motor_cmd import AngleCommand
+from ik_solver_meshcat import IKSolver
 
 log = logging.getLogger(__name__)
 
@@ -23,8 +21,15 @@ JOINT_TO_MOTOR = {
 }
 
 
-def ik_to_commands(q_dict: dict, speed: int = 400) -> list[AngleCommand]:
+def ik_to_commands(q_dict: dict, speed: int = 400):
     """IK 결과 dict → AngleCommand 리스트 변환."""
+    try:
+        from motor_controller import MotorController
+        from config.motor_cmd import AngleCommand
+    except ImportError:
+        log.warning("motor_controller 모듈을 불러올 수 없습니다. 모터 전송을 건너뜁니다.")
+        return None
+
     commands = []
     for urdf_joint, angle_deg in q_dict.items():
         motor_name = JOINT_TO_MOTOR.get(urdf_joint)
@@ -35,39 +40,65 @@ def ik_to_commands(q_dict: dict, speed: int = 400) -> list[AngleCommand]:
     return commands
 
 
+def send_to_motors(commands):
+    """AngleCommand 리스트를 CAN 버스로 전송. 하드웨어 없으면 건너뜀."""
+    try:
+        from motor_controller import MotorController
+    except ImportError:
+        log.warning("motor_controller 모듈 없음. 모터 전송 건너뜀.")
+        return
+
+    try:
+        with MotorController() as mc:
+            mc.move_motors(commands)
+            log.info("모터 명령 전송 완료.")
+    except Exception as e:
+        log.warning("모터 전송 실패 (CAN 연결 없음?): %s", e)
+
+
 def main():
     # ── 목표 위치·자세 설정 ──────────────────────────────────────
     target_pos = np.array([0.3, 0.0, 0.2])           # x, y, z (m)
     target_rot = IKSolver.euler_to_rotation(0, 0, 0)  # roll, pitch, yaw (deg)
     # ────────────────────────────────────────────────────────────
 
-    # 1. IK 계산
-    log.info("IK 계산 중...")
-    solver = IKSolver()
+    # 1. IK 계산 + MeshCat 시각화
+    log.info("IK 계산 중 (MeshCat 시각화 활성화)...")
+    solver = IKSolver(meshcat=True)
+
     q_dict, pos_err, rot_err = solver.solve(target_pos, target_rot)
 
     if q_dict is None:
-        log.error("IK 실패 — 위치오차: %.2f mm, 자세오차: %.3f°",
-                  pos_err * 1000, np.degrees(rot_err))
+        log.error(
+            "IK 실패 — 위치오차: %.2f mm, 자세오차: %.3f°",
+            pos_err * 1000,
+            np.degrees(rot_err),
+        )
+        input("\nMeshCat 시각화 중 (IK 실패 상태)... Enter를 누르면 종료합니다.")
         return
 
-    log.info("IK 성공 — 위치오차: %.2f mm, 자세오차: %.3f°",
-             pos_err * 1000, np.degrees(rot_err))
+    log.info(
+        "IK 성공 — 위치오차: %.2f mm, 자세오차: %.3f°",
+        pos_err * 1000,
+        np.degrees(rot_err),
+    )
     for name, angle in q_dict.items():
         log.info("  %-20s: %8.3f °", name, angle)
 
-    # 2. AngleCommand 변환
+    # 2. AngleCommand 변환 및 모터 전송 (CAN 하드웨어 없으면 건너뜀)
     commands = ik_to_commands(q_dict)
-    if not commands:
-        log.error("전송할 명령이 없습니다. JOINT_TO_MOTOR 매핑을 확인하세요.")
-        return
+    if commands:
+        send_to_motors(commands)
+    else:
+        log.info("모터 전송 없이 MeshCat 시각화만 수행합니다.")
 
-    # 3. 모터 전송
-    with MotorController() as mc:
-        mc.move_motors(commands)
-        log.info("모터 명령 전송 완료.")
+    # 3. MeshCat 창 유지 (Enter 입력 전까지 유지)
+    input("\nMeshCat 시각화 중... Enter를 누르면 종료합니다.")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     main()
