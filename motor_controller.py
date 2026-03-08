@@ -37,50 +37,32 @@ class MotorController:
         self.bus: can.BusABC | None = None
         self.port: str | None = None
         self._is_connected = False
-
-    # -----------------------------
-    # connection management
-    # -----------------------------
-    def _find_can_port(self) -> str | None:
-        log.info("Searching for CAN adapter...")
-        for port in serial.tools.list_ports.comports():
-            log.debug(
-                "Port: %s, VID: %s, PID: %s",
-                port.device,
-                port.vid,
-                port.pid,
-            )
-            if port.vid == _ADAPTER_VID and port.pid == _ADAPTER_PID:
-                log.info("Found CAN adapter: %s", port.device)
-                return port.device
-
-        log.error("CAN adapter not found. Check device connection.")
-        return None
+        self.port = "COM5"
 
     def connect(self) -> bool:
-        if self._is_connected and self.bus is not None:
-            log.info("CAN bus already connected on %s", self.port)
-            return True
-
-        self.port = self._find_can_port()
-        if self.port is None:
-            return False
-
         try:
-            self.bus = can.interface.Bus(
-                interface="slcan",
-                channel=self.port,
-                bitrate=self.bitrate,
-            )
+            if self.port is not None:
+                try:
+                    self.bus = can.interface.Bus(
+                        interface="slcan",
+                        channel=self.port,
+                        bitrate=self.bitrate,
+                    )
+                    log.info("CAN bus initialized on %s", self.port)
+
+                except Exception:
+                    log.warning("Real CAN not found. Using virtual CAN.")
+                    self.bus = can.interface.Bus(interface="virtual")
+
+            else:
+                self.bus = can.interface.Bus(interface="virtual")
+                log.info("Virtual CAN bus started")
+
             self._is_connected = True
-            log.info("CAN bus initialized on %s", self.port)
             return True
 
         except Exception as e:
             log.error("CAN bus init failed: %s", e)
-            self.bus = None
-            self.port = None
-            self._is_connected = False
             return False
 
     def disconnect(self):

@@ -1,20 +1,20 @@
 import os
+import time
 import numpy as np
 import pinocchio as pin
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation as R, Slerp   # Slerp 추가
 from pinocchio.visualize import MeshcatVisualizer
 
-# 이 파일 기준 상대 경로로 URDF/mesh 디렉토리 설정
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_DEFAULT_URDF = os.path.join(_HERE, "7dof_urdf", "7dof_urdf.urdf")
-_DEFAULT_MESH_DIR = os.path.join(_HERE, "7dof_urdf")
+_DEFAULT_URDF = os.path.join(_HERE, "7dof_arm_urdf", "7dof_arm_urdf.urdf")
+_DEFAULT_MESH_DIR = os.path.join(_HERE, "7dof_arm_urdf")
 
 
 class IKSolver:
     def __init__(
         self,
         urdf_path: str = _DEFAULT_URDF,
-        ee_frame: str = "end_effector-v1",
+        ee_frame: str = "link_end",
         n_steps: int = 500,
         n_restarts: int = 15,
         pos_tol: float = 1e-3,
@@ -27,7 +27,6 @@ class IKSolver:
         self.urdf_path = urdf_path
         self.mesh_dir = mesh_dir
 
-        # URDF + geometry model 같이 로드
         if mesh_dir is not None:
             self.model, self.collision_model, self.visual_model = pin.buildModelsFromUrdf(
                 urdf_path, mesh_dir
@@ -48,6 +47,9 @@ class IKSolver:
         self.damping = damping
         self.dq_max = dq_max
 
+        # ★ 현재 관절 상태 추적 (보간 연속성을 위해)
+        self.q_current = pin.neutral(self.model)
+
         self.viz = None
         if meshcat:
             self._init_meshcat()
@@ -61,20 +63,13 @@ class IKSolver:
         self.viz.initViewer(open=True)
         self.viz.loadViewerModel()
 
-        # base_link 500mm 위로 올리고 Y축 기준 90° 회전
-        # Ry(90°): X→Z, Z→-X 방향으로 회전
-        # T = Translate(0, 0, 0.5) @ Ry(90°)
-        angle = np.pi / 2
-        T_base = np.array([
-            [ np.cos(angle), 0, np.sin(angle), 0.0 ],
-            [ 0,             1, 0,             0.0 ],
-            [-np.sin(angle), 0, np.cos(angle), 0.5 ],
-            [ 0,             0, 0,             1.0 ],
-        ])
-        self.viz.viewer[self.viz.viewerRootNodeName].set_transform(T_base)
+        R = pin.rpy.rpyToMatrix(0, 0, 0)
 
-        q0 = pin.neutral(self.model)
-        self.viz.display(q0)
+        T_base = np.eye(4)
+        T_base[:3, :3] = R
+        T_base[2, 3] = 0.5
+        self.viz.viewer[self.viz.viewerRootNodeName].set_transform(T_base)
+        self.viz.display(self.q_current)
 
     def display_q_rad(self, q_rad: np.ndarray):
         if self.viz is not None:
@@ -87,20 +82,87 @@ class IKSolver:
                 q_rad[i] = np.radians(q_deg_dict[name])
         self.display_q_rad(q_rad)
 
+    # ─────────────────────────────────────────────────────────────
+    # ★ 핵심 추가: Cartesian 보간 이동
+    # ─────────────────────────────────────────────────────────────
+
+    def _get_current_ee_pose(self) -> tuple[np.ndarray, np.ndarray]:
+        """현재 q_current 기준 EE 위치·회전 반환"""
+        pin.forwardKinematics(self.model, self.data, self.q_current)
+        pin.updateFramePlacements(self.model, self.data)
+        oMf = self.data.oMf[self.ee_id]
+        return oMf.translation.copy(), oMf.rotation.copy()
+
+    def move_to(
+        self,
+        p_target: np.ndarray,
+        R_target: np.ndarray,
+        n_interp: int = 60,
+        dt: float = 0.03,
+    ) -> tuple[dict | None, float, float]:
+        """
+        현재 EE 포즈 → 목표까지 Cartesian 보간(LERP + SLERP)으로
+        부드럽게 이동. 각 웨이포인트마다 IK를 계산해 시각화.
+
+        Parameters
+        ----------
+        n_interp : 보간 스텝 수 (많을수록 부드러움, 느려짐)
+        dt       : 프레임 간격 [초]
+        """
+        p_start, R_start = self._get_current_ee_pose()
+
+        # SLERP 준비 (scipy Slerp: 두 키프레임 사이를 보간)
+        rot_start = R.from_matrix(R_start)
+        rot_end   = R.from_matrix(R_target)
+        slerp_fn  = Slerp([0.0, 1.0], R.concatenate([rot_start, rot_end]))
+
+        q = self.q_current.copy()
+        best_q, best_pe, best_re = q, np.inf, np.inf
+
+        for i in range(1, n_interp + 1):
+            t = i / n_interp
+
+            # 위치: 선형 보간 (LERP)
+            p_interp = (1.0 - t) * p_start + t * p_target
+
+            # 회전: 구면 선형 보간 (SLERP)
+            R_interp = slerp_fn(t).as_matrix()
+
+            # ★ Warm start — 직전 웨이포인트 결과를 초기값으로 사용
+            q, pe, re = self._ik_single(q, p_interp, R_interp)
+
+            if self.viz is not None:
+                self.viz.display(q)
+            time.sleep(dt)
+
+            if pe + re < best_pe + best_re:
+                best_q, best_pe, best_re = q, pe, re
+
+        self.q_current = best_q.copy()
+
+        if best_pe < self.pos_tol and best_re < self.rot_tol:
+            return self._to_dict(np.degrees(best_q)), best_pe, best_re
+        return None, best_pe, best_re
+
+    # ─────────────────────────────────────────────────────────────
+
     def solve(
         self,
         p_target: np.ndarray,
         R_target: np.ndarray,
     ) -> tuple[dict | None, float, float]:
+        """보간 없이 즉시 IK (q_current 기준 초기값 사용)"""
         best_q, best_pe, best_re = None, np.inf, np.inf
 
-        starts = [pin.neutral(self.model)] + [
+        # neutral 대신 q_current를 첫 번째 초기값으로 사용
+        starts = [self.q_current.copy()] + [
             pin.randomConfiguration(self.model) for _ in range(self.n_restarts)
         ]
 
         for q0 in starts:
             q, pe, re = self._ik_single(q0, p_target, R_target)
             if pe < self.pos_tol and re < self.rot_tol:
+                self.q_current = q.copy()
                 if self.viz is not None:
                     self.viz.display(q)
                 return self._to_dict(np.degrees(q)), pe, re
@@ -108,8 +170,10 @@ class IKSolver:
             if pe + re < best_pe + best_re:
                 best_q, best_pe, best_re = q, pe, re
 
-        if best_q is not None and self.viz is not None:
-            self.viz.display(best_q)
+        if best_q is not None:
+            self.q_current = best_q.copy()
+            if self.viz is not None:
+                self.viz.display(best_q)
 
         return None, best_pe, best_re
 
@@ -134,17 +198,14 @@ class IKSolver:
                 return q, pe, re
 
             J = pin.computeFrameJacobian(
-                self.model,
-                self.data,
-                q,
-                self.ee_id,
+                self.model, self.data, q, self.ee_id,
                 pin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
             )
             JT = J.T
-            A = J @ JT + self.damping * np.eye(6)
+            A  = J @ JT + self.damping * np.eye(6)
             dq = JT @ np.linalg.solve(A, np.hstack([pe_vec, re_vec]))
-            q = pin.integrate(self.model, q, np.clip(dq, -self.dq_max, self.dq_max))
-            q = np.clip(q, self.model.lowerPositionLimit, self.model.upperPositionLimit)
+            q  = pin.integrate(self.model, q, np.clip(dq, -self.dq_max, self.dq_max))
+            q  = np.clip(q, self.model.lowerPositionLimit, self.model.upperPositionLimit)
 
         pin.forwardKinematics(self.model, self.data, q)
         pin.updateFramePlacements(self.model, self.data)
@@ -160,10 +221,15 @@ class IKSolver:
 if __name__ == "__main__":
     solver = IKSolver(meshcat=True)
 
-    target_pos = np.array([0.3, 0.0, 0.2])
+    target_pos = np.array([0.1, 0.2, -0.3])
     target_rot = IKSolver.euler_to_rotation(0, 0, 0)
 
-    q_dict, pos_err, rot_err = solver.solve(target_pos, target_rot)
+    print("=== 보간 이동 시작 ===")
+    q_dict, pos_err, rot_err = solver.move_to(
+        target_pos, target_rot,
+        n_interp=60,  # 웨이포인트 수 (많을수록 부드러움)
+        dt=0.03,      # 프레임 간격 [초]
+    )
 
     if q_dict is not None:
         print("=== IK 성공 ===")
