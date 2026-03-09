@@ -38,15 +38,16 @@ class IKControllerGUI:
     ROT_FIELDS = [("Roll", 0.0, "deg"), ("Pitch", 0.0, "deg"), ("Yaw", 0.0, "deg")]
 
     def __init__(self):
-        self.solver = IKSolver(meshcat=True, n_restarts=3, n_steps=200)
+        self.solver = IKSolver(meshcat=True, n_restarts=3, n_steps=80)
         self.motor = MotorController()
         self.joint_map = {
-            "joint1": "left_joint1",
-            "joint2": "left_joint2",
-            "joint3": "left_joint3",
-            "joint4": "left_joint4",
-            "joint5": "left_joint5",
-            "joint6": "left_joint6",
+            "joint_1": "left_joint1",
+            "joint_2": "left_joint2",
+            "joint_3": "left_joint3",
+            "joint_4": "left_joint4",
+            "joint_5": "left_joint5",
+            "joint_6": "left_joint6",
+            "joint_7": "left_joint7",
         }
 
         self._solve_lock = threading.Lock()
@@ -283,6 +284,30 @@ class IKControllerGUI:
         self.btn_delete.configure(state=state, bg=BTN_RED if is_normal else BORDER)
         self.btn_clear.configure(state=state)
 
+    # ── 관절 부호 설정 (+1 정방향 / -1 반전) ─────────────────────
+    JOINT_SIGN = {
+        "joint_1": -1,
+        "joint_2": +1,
+        "joint_3": +1,
+        "joint_4": +1,
+        "joint_5": +1,
+        "joint_6": +1,
+        "joint_7": -1,
+    }
+
+    # ── 매 IK 스텝 → 모터 전달 ────────────────────────────────────
+    def _send_joint_angles(self, q_deg_dict: dict):
+        """move_to() 각 보간 스텝마다 호출 — 관절각을 실시간으로 모터에 전달."""
+        try:
+            for ik_joint, angle in q_deg_dict.items():
+                if ik_joint in self.joint_map:
+                    motor_name = self.joint_map[ik_joint]
+                    sign = self.JOINT_SIGN.get(ik_joint, +1)
+                    cmd = AngleCommand(motor_name, int(angle * sign), 1080)
+                    self.motor.move_motor_to_angle(cmd)
+        except Exception as e:
+            print(f"motor step error: {e}")
+
     # ── IK 콜백 ───────────────────────────────────────────────────
     def _on_enter(self, event):
         event.widget.tk_focusNext().focus()
@@ -315,7 +340,8 @@ class IKControllerGUI:
         def _worker():
             try:
                 q_dict, pos_err, rot_err = self.solver.move_to(
-                    target_pos, target_rot, n_interp=60, dt=0.03,
+                    target_pos, target_rot, n_interp=500, dt=0,
+                    step_callback=self._send_joint_angles,
                 )
             finally:
                 self._solve_lock.release()
@@ -404,7 +430,8 @@ class IKControllerGUI:
                     target_pos = np.array([x, y, z])
                     target_rot = IKSolver.euler_to_rotation(roll, pitch, yaw)
                     q_dict, pos_err, rot_err = self.solver.move_to(
-                        target_pos, target_rot, n_interp=60, dt=0.03,
+                        target_pos, target_rot, n_interp=500, dt=0,
+                        step_callback=self._send_joint_angles,
                     )
 
                     if q_dict is None:
@@ -435,25 +462,6 @@ class IKControllerGUI:
         self._set_buttons_state('normal')
 
         if q_dict is not None:
-
-            # ---- motor command ----
-            try:
-                for ik_joint, angle in q_dict.items():
-
-                    if ik_joint in self.joint_map:
-                        motor_name = self.joint_map[ik_joint]
-
-                        cmd = AngleCommand(
-                            angle=angle,
-                            velocity=1.0,
-                            kp=20.0,
-                            kd=0.5,
-                        )
-
-                        self.motor.send_angle_command(motor_name, cmd)
-
-            except Exception as e:
-                print("motor error:", e)
 
             self.status_var.set(
                 f"OK   pos {pos_err * 1000:6.2f} mm"

@@ -20,7 +20,7 @@ class IKSolver:
         pos_tol: float = 1e-3,
         rot_tol: float = 1e-2,
         damping: float = 1e-4,
-        dq_max: float = 0.05,
+        dq_max: float = 0.02,
         meshcat: bool = True,
         mesh_dir: str | None = _DEFAULT_MESH_DIR,
     ):
@@ -99,6 +99,7 @@ class IKSolver:
         R_target: np.ndarray,
         n_interp: int = 60,
         dt: float = 0.03,
+        step_callback=None,
     ) -> tuple[dict | None, float, float]:
         """
         현재 EE 포즈 → 목표까지 Cartesian 보간(LERP + SLERP)으로
@@ -109,7 +110,14 @@ class IKSolver:
         n_interp : 보간 스텝 수 (많을수록 부드러움, 느려짐)
         dt       : 프레임 간격 [초]
         """
+        # ★ 실패 시 복원을 위해 현재 상태 저장
+        q_saved = self.q_current.copy()
+
         p_start, R_start = self._get_current_ee_pose()
+
+        # ★ 시작 전 meshcat을 q_current와 동기화 (이전 애니메이션 끝 자세와 불일치 방지)
+        if self.viz is not None:
+            self.viz.display(self.q_current)
 
         # SLERP 준비 (scipy Slerp: 두 키프레임 사이를 보간)
         rot_start = R.from_matrix(R_start)
@@ -117,7 +125,7 @@ class IKSolver:
         slerp_fn  = Slerp([0.0, 1.0], R.concatenate([rot_start, rot_end]))
 
         q = self.q_current.copy()
-        best_q, best_pe, best_re = q, np.inf, np.inf
+        pe, re = np.inf, np.inf
 
         for i in range(1, n_interp + 1):
             t = i / n_interp
@@ -128,21 +136,28 @@ class IKSolver:
             # 회전: 구면 선형 보간 (SLERP)
             R_interp = slerp_fn(t).as_matrix()
 
-            # ★ Warm start — 직전 웨이포인트 결과를 초기값으로 사용
+            # Warm start — 직전 웨이포인트 결과를 초기값으로 사용
             q, pe, re = self._ik_single(q, p_interp, R_interp)
+
+            # 매 스텝 관절각 콜백 (모터 실시간 전달 등)
+            if step_callback is not None:
+                step_callback(self._to_dict(np.degrees(q)))
 
             if self.viz is not None:
                 self.viz.display(q)
             time.sleep(dt)
 
-            if pe + re < best_pe + best_re:
-                best_q, best_pe, best_re = q, pe, re
+        # 루프 끝 후 추가 display 없음 — 마지막 프레임(q)이 곧 q_current
+        # (추가 display가 있으면 best_q로 snap-back되어 순간이동처럼 보임)
+        if pe < self.pos_tol and re < self.rot_tol:
+            self.q_current = q.copy()
+            return self._to_dict(np.degrees(q)), pe, re
 
-        self.q_current = best_q.copy()
-
-        if best_pe < self.pos_tol and best_re < self.rot_tol:
-            return self._to_dict(np.degrees(best_q)), best_pe, best_re
-        return None, best_pe, best_re
+        # 실패: q_current를 호출 전 상태로 복원 (오염 방지)
+        self.q_current = q_saved
+        if self.viz is not None:
+            self.viz.display(self.q_current)
+        return None, pe, re
 
     # ─────────────────────────────────────────────────────────────
 

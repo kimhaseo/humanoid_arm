@@ -1,269 +1,253 @@
-# -*- coding: utf-8 -*-
-import logging
+import sys
+import os
+from config.motor_cmd import AngleCommand
 import time
 
-import can
-import serial.tools.list_ports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from config.motor_cmd import AngleCommand, AccelCommand, PidCommand
-
-log = logging.getLogger(__name__)
-
-# CAN adapter VID/PID (CANable / slcan)
-_ADAPTER_VID = 0x16D0
-_ADAPTER_PID = 0x117E
-
+from can_handler import CanHandler
 
 class MotorController:
-    """CAN bus motor controller.
+    def __init__(self):
+        self.can_handler = CanHandler()
 
-    Usage:
-        mc = MotorController()
-        if not mc.connect():
-            raise ConnectionError("Failed to connect to CAN bus.")
-
+    def move_motor_to_angle(self, angle_command):
         try:
-            mc.move_motor_to_angle(AngleCommand("left_joint1", 90, 360))
-        finally:
-            mc.disconnect()
+            angle = angle_command.angle
+            speed = angle_command.speed
+            can_id = angle_command.can_id
+            angle_control = int(angle * 1000)
+            command_byte = 0xA4
+            null_byte = 0x00
+            speed_limit_low = speed & 0xFF
+            speed_limit_high = (speed >> 8) & 0xFF
+            angle_control_low = angle_control & 0xFF
+            angle_control_mid1 = (angle_control >> 8) & 0xFF
+            angle_control_mid2 = (angle_control >> 16) & 0xFF
+            angle_control_high = (angle_control >> 24) & 0xFF
 
-    Or:
-        with MotorController() as mc:
-            mc.move_motor_to_angle(AngleCommand("left_joint1", 90, 360))
-    """
+            data = [
+                command_byte,
+                null_byte,
+                speed_limit_low,
+                speed_limit_high,
+                angle_control_low,
+                angle_control_mid1,
+                angle_control_mid2,
+                angle_control_high
+            ]
 
-    def __init__(self, bitrate: int = 1000000):
-        self.bitrate = bitrate
-        self.bus: can.BusABC | None = None
-        self.port: str | None = None
-        self._is_connected = False
-        self.port = "COM5"
-
-    def connect(self) -> bool:
-        try:
-            if self.port is not None:
-                try:
-                    self.bus = can.interface.Bus(
-                        interface="slcan",
-                        channel=self.port,
-                        bitrate=self.bitrate,
-                    )
-                    log.info("CAN bus initialized on %s", self.port)
-
-                except Exception:
-                    log.warning("Real CAN not found. Using virtual CAN.")
-                    self.bus = can.interface.Bus(interface="virtual")
-
-            else:
-                self.bus = can.interface.Bus(interface="virtual")
-                log.info("Virtual CAN bus started")
-
-            self._is_connected = True
-            return True
+            # CAN 메시지 전송
+            self.can_handler.send_message(can_id, data)
+            # print(f"Motor {angle_command.motor_name} moved to angle {angle} degrees.")
 
         except Exception as e:
-            log.error("CAN bus init failed: %s", e)
-            return False
+            print(f"Error moving motor {angle_command.motor_name}: {e}")
+            raise
 
-    def disconnect(self):
-        if self.bus is not None:
-            try:
-                self.bus.shutdown()
-                log.info("CAN bus disconnected.")
-            except Exception as e:
-                log.warning("Error during CAN shutdown: %s", e)
-            finally:
-                self.bus = None
-                self.port = None
-                self._is_connected = False
+    def move_motors(self, angle_commands):
+        for angle_command in angle_commands:
+            self.move_motor_to_angle(angle_command)
 
-    def __enter__(self):
-        if not self.connect():
-            raise ConnectionError("Failed to connect to CAN bus.")
-        return self
+    def close(self):
+        """CAN 인터페이스를 종료하고 버스를 안전하게 닫습니다."""
+        self.can_handler.close()  # CAN 핸들러 종료
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()
+    def read_acceleration(self,id):
 
-    # -----------------------------
-    # low-level
-    # -----------------------------
-    def _require_bus(self):
-        if self.bus is None or not self._is_connected:
-            raise RuntimeError("CAN bus is not connected.")
-
-    def _send(self, can_id: int, data: list[int]):
-        self._require_bus()
-
-        if len(data) != 8:
-            raise ValueError(f"CAN data must be 8 bytes, got {len(data)} bytes.")
-
-        msg = can.Message(
-            arbitration_id=can_id,
-            data=data,
-            is_extended_id=False,
-        )
-        self.bus.send(msg)
-        log.debug("Sent to %s: %s", hex(can_id), data)
-
-    def _send_recv(self, can_id: int, data: list[int], timeout: float = 1.0):
-        """Send command and wait for matching response CAN ID."""
-        self._require_bus()
-        self._send(can_id, data)
-
-        deadline = time.time() + timeout
-
-        while time.time() < deadline:
-            remain = deadline - time.time()
-            if remain <= 0:
-                break
-
-            response = self.bus.recv(timeout=remain)
-            if response is None:
-                continue
-
-            log.debug(
-                "Received frame id=%s data=%s",
-                hex(response.arbitration_id),
-                list(response.data),
-            )
-
-            if response.arbitration_id == can_id:
-                return response
-
-        log.warning("Timeout waiting response from %s", hex(can_id))
-        return None
-
-    # -----------------------------
-    # motor commands
-    # -----------------------------
-    def stop(self, can_id: int):
-        data = [0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        self._send(can_id, data)
-        log.info("Stop command sent to %s", hex(can_id))
-
-    def force_control(self, can_id: int, force: int):
-        fc = int(force)
-        data = [
-            0xA1, 0x00, 0x00, 0x00,
-            fc & 0xFF, (fc >> 8) & 0xFF,
-            0x00, 0x00,
-        ]
-        self._send(can_id, data)
-        log.info("Force control (%d) sent to %s", force, hex(can_id))
-
-    def move_motor_to_angle(self, cmd: AngleCommand):
-        angle_raw = int(cmd.angle * 1000)
-        speed_raw = int(cmd.speed)
+        can_id = id
+        command_byte = 0x33
+        null_byte = 0x00
 
         data = [
-            0xA4, 0x00,
-            speed_raw & 0xFF, (speed_raw >> 8) & 0xFF,
-            angle_raw & 0xFF, (angle_raw >> 8) & 0xFF,
-            (angle_raw >> 16) & 0xFF, (angle_raw >> 24) & 0xFF,
+            command_byte,
+            null_byte,
+            null_byte,
+            null_byte,
+            null_byte,
+            null_byte,
+            null_byte,
+            null_byte
         ]
-        self._send(cmd.can_id, data)
-        log.info(
-            "Motor %s (%s) -> angle %.2f deg, speed %d",
-            cmd.motor_name,
-            hex(cmd.can_id),
-            cmd.angle,
-            cmd.speed,
-        )
 
-    def move_motors(self, commands: list[AngleCommand]):
+        # CAN 메시지 전송
+        self.can_handler.send_message(can_id, data)
+        response = self.can_handler.receive_message()
+
+        return response
+
+    def write_pid_gain(self, pid_command):
+        try:
+            p_gain = pid_command.p_gain
+            i_gain = pid_command.i_gain
+            can_id = pid_command.can_id
+
+            # 8비트 값 그대로 사용
+            data = [
+                0x31,  # command byte
+                0x00,  # NULL byte
+                int(p_gain),  # Position loop P parameter (8-bit)
+                int(i_gain),  # Position loop I parameter (8-bit)
+                0x00,  # Speed loop P parameter (0x00은 예시)
+                0x00,  # Speed loop I parameter
+                0x00,  # Torque loop P parameter
+                0x00  # Torque loop I parameter
+            ]
+
+            # CAN 메시지 전송
+            self.can_handler.send_message(can_id, data)
+            print(f"PID Gains sent: P_gain={p_gain}, I_gain={i_gain}")
+        except Exception as e:
+            print(f"Error sending PID gains: {e}")
+
+    def move_motors_to_angle(self, commands: list[AngleCommand]):
         for cmd in commands:
             self.move_motor_to_angle(cmd)
 
-    def increment_angle(self, can_id: int, angle_increment: float, max_speed: float):
-        angle_raw = int(angle_increment * 1000)
-        speed_raw = int(max_speed * 10)
+    def write_acceleration(self,accel_command):
+        try:
 
+            accel = accel_command.angle
+            can_id = accel_command.can_id
+            accel_control = int(accel)
+            if accel_control > 100:
+                accel_control = 100
+            command_byte = 0x34
+            null_byte = 0x00
+            accel_control_low = accel_control & 0xFF
+            accel_control_mid1 = (accel_control >> 8) & 0xFF
+            accel_control_mid2 = (accel_control >> 16) & 0xFF
+            accel_control_high = (accel_control >> 24) & 0xFF
+
+            data = [
+                command_byte,
+                null_byte,
+                null_byte,
+                null_byte,
+                accel_control_low,
+                accel_control_mid1,
+                accel_control_mid2,
+                accel_control_high
+            ]
+
+            # CAN 메시지 전송
+            self.can_handler.send_message(can_id, data)
+            print(f"Motor {accel_command.motor_name} translation  {accel} degree/sec.")
+
+        except Exception as e:
+            print(f"Error moving motor {accel_command.motor_name}: {e}")
+            raise
+
+    def read_angle(self,can_id):
         data = [
-            0xA8, 0x00,
-            speed_raw & 0xFF, (speed_raw >> 8) & 0xFF,
-            angle_raw & 0xFF, (angle_raw >> 8) & 0xFF,
-            (angle_raw >> 16) & 0xFF, (angle_raw >> 24) & 0xFF,
+            0x92,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00
         ]
-        self._send(can_id, data)
-        log.info(
-            "Increment angle %s: %.2f deg, max_speed %.2f",
-            hex(can_id),
-            angle_increment,
-            max_speed,
-        )
-
-    def write_pid_gain(self, cmd: PidCommand):
-        data = [
-            0x31, 0x00,
-            int(cmd.p_gain), int(cmd.i_gain),
-            0x00, 0x00, 0x00, 0x00,
-        ]
-        self._send(cmd.can_id, data)
-        log.info(
-            "PID gains sent to %s (%s): P=%d, I=%d",
-            cmd.motor_name,
-            hex(cmd.can_id),
-            cmd.p_gain,
-            cmd.i_gain,
-        )
-
-    def write_acceleration(self, cmd: AccelCommand):
-        accel = max(0, min(int(cmd.accel), 100))
-        data = [
-            0x34, 0x00, 0x00, 0x00,
-            accel & 0xFF, (accel >> 8) & 0xFF,
-            (accel >> 16) & 0xFF, (accel >> 24) & 0xFF,
-        ]
-        self._send(cmd.can_id, data)
-        log.info("Acceleration %d sent to %s", accel, cmd.motor_name)
-
-    def read_acceleration(self, can_id: int):
-        data = [0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        return self._send_recv(can_id, data)
-
-    def read_angle(self, can_id: int) -> int | None:
-        data = [0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        response = self._send_recv(can_id, data, timeout=1.0)
-        if response is None:
-            return None
-
-        d = response.data
-        if len(d) < 8:
-            log.warning("Invalid angle response length from %s: %s", hex(can_id), list(d))
-            return None
+        self.can_handler.send_message(can_id, data)
+        respones = self.can_handler.receive_message()
 
         motor_angle = (
-            d[1]
-            | (d[2] << 8)
-            | (d[3] << 16)
-            | (d[4] << 24)
-            | (d[5] << 32)
-            | (d[6] << 40)
-            | (d[7] << 48)
+                (respones[1] << 0) |
+                (respones[2] << 8) |
+                (respones[3] << 16) |
+                (respones[4] << 24) |
+                (respones[5] << 32) |
+                (respones[6] << 40) |
+
+                (respones[7] << 48)
         )
         return motor_angle
 
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    )
-
-    mc = MotorController()
-
-    if not mc.connect():
-        raise ConnectionError("Failed to connect to CAN bus.")
-
-    try:
-        cmds = [
-            AngleCommand("left_joint1", 0, 360),
+    def zero_angle(self, can_id):
+        data = [
+            0x91, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
         ]
-        mc.move_motors(cmds)
+        self.can_handler.send_message(can_id, data)
+        data = [
+            0x19, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        ]
+        self.can_handler.send_message(can_id, data)
 
-        angle = mc.read_angle(cmds[0].can_id)
-        print("read_angle:", angle)
+        # 응답 확인 추가
+        response = self.can_handler.receive_message()
+        print(f"zero_angle response: {[hex(b) for b in response]}")
 
-    finally:
-        mc.disconnect()
+        time.sleep(1)  # ROM 쓰기 대기
+if __name__ == "__main__":
+    mc = MotorController()
+    # time.sleep(2)
+    # try:
+    #     mc.zero_angle(0x141)
+    #     time.sleep(2)
+    #     # ... 나머지 코드
+    # finally:
+    #     mc.close()  # 정상/에러 상관없이 항상 닫힘
+    # while True:
+    #     cmds = [
+    #         AngleCommand("left_joint1", 0, 120),
+    #         AngleCommand("left_joint2", 0, 240),
+    #         AngleCommand("left_joint3", 0, 240),
+    #         AngleCommand("left_joint4", 0, 240),
+    #         AngleCommand("left_joint5", 0, 240),
+    #         AngleCommand("left_joint6", 0, 360),
+    #         AngleCommand("left_joint7", 0, 240),
+    #
+    #     ]
+    #     mc.move_motors_to_angle(cmds)
+    #     time.sleep(3)
+    #
+    #     cmds = [
+    #         AngleCommand("left_joint1", 40, 1080),
+    #         AngleCommand("left_joint2", -15, 1080),
+    #         AngleCommand("left_joint3", 20, 240),
+    #         AngleCommand("left_joint4",10, 720),
+    #         AngleCommand("left_joint5", 30, 240),
+    #         AngleCommand("left_joint6", 60, 360),
+    #         AngleCommand("left_joint7", 60, 240),
+    #
+    #     ]
+    #     mc.move_motors_to_angle(cmds)
+    #     time.sleep(3)
+
+    # cmds = [
+    #     AngleCommand("left_joint1", 0, 360),
+    #     # AngleCommand("left_joint2", 60, 360),
+    #     # AngleCommand("left_joint3", 0, 360),
+    #     # AngleCommand("left_joint4", 0, 360),
+    #     # AngleCommand("left_joint5", 0, 360),
+    #     # AngleCommand("left_joint6", 60, 720),
+    #
+    # ]
+    #
+    # mc.move_motors_to_angle(cmds)
+
+    # time.sleep(3)
+    #
+    # cmds = [
+    #     AngleCommand("left_joint1", 0, 360),
+    #     AngleCommand("left_joint2", 0, 360),
+    #     AngleCommand("left_joint3", 0, 360),
+    #     AngleCommand("left_joint4", 0, 360),
+    #     AngleCommand("left_joint5", 0, 360),
+    #     AngleCommand("left_joint6", 0, 360),
+    #     AngleCommand("left_joint7", 0, 360),
+    #
+    # ]
+    #
+    # mc.move_motors_to_angle(cmds)
+    #
+    # time.sleep(3)
+    # #
+    # cmds = [
+    #     AngleCommand("left_joint1", -18, 1080),
+    # ]
+    #
+    # mc.move_motors_to_angle(cmds)
