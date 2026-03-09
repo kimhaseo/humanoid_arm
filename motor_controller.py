@@ -5,11 +5,11 @@ import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from can_handler import CanHandler
+from can_handler import CanHandler, create_can_handler
 
 class MotorController:
     def __init__(self):
-        self.can_handler = CanHandler()
+        self.can_handler = create_can_handler()
 
     def move_motor_to_angle(self, angle_command):
         try:

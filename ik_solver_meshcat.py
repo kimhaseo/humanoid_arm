@@ -62,7 +62,12 @@ class IKSolver:
             self.visual_model,
         )
         self.viz.initViewer(open=True)
-        self.viz.loadViewerModel()
+        # 메시 색상: 짙은 회색 [R, G, B, A]  (0.0 ~ 1.0)
+        self.viz.loadViewerModel(color=[0.22, 0.22, 0.22, 1.0])
+
+        # MeshCat 배경색: 흰색
+        self.viz.viewer["/Background"].set_property("top_color",    [1.0, 1.0, 1.0])
+        self.viz.viewer["/Background"].set_property("bottom_color", [1.0, 1.0, 1.0])
 
         R = pin.rpy.rpyToMatrix(0, 0, 0)
 
