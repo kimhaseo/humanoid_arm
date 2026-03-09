@@ -13,9 +13,9 @@ class CanHandler:
         try:
             message = can.Message(arbitration_id=can_id, data=data, is_extended_id=False)
             self.bus.send(message)
-            print(f"Sent CAN message: ID={can_id}, data={data}")
+            # print(f"Sent CAN message: ID={can_id}, data={data}")
         except can.CanError as e:
-            print(f"Error sending CAN message: {e}")
+            print(f"Error sending CAN message: ID={hex(can_id)}, {e}")
             raise
 
     def receive_message(self, timeout=1.0):

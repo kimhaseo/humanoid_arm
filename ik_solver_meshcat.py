@@ -1,5 +1,6 @@
 import os
 import time
+import threading
 import numpy as np
 import pinocchio as pin
 from scipy.spatial.transform import Rotation as R, Slerp   # Slerp 추가
@@ -100,6 +101,7 @@ class IKSolver:
         n_interp: int = 60,
         dt: float = 0.03,
         step_callback=None,
+        viz_every: int = 1,
     ) -> tuple[dict | None, float, float]:
         """
         현재 EE 포즈 → 목표까지 Cartesian 보간(LERP + SLERP)으로
@@ -127,6 +129,21 @@ class IKSolver:
         q = self.q_current.copy()
         pe, re = np.inf, np.inf
 
+        # ── Meshcat 백그라운드 스레드 (30 fps, 모터 타이밍과 독립) ──
+        # 모터 명령 루프와 GUI 렌더링을 분리해 로봇/GUI 종료 시점을 맞춤
+        _latest_q = [q.copy()]
+        _viz_stop  = [False]
+
+        def _viz_loop():
+            while not _viz_stop[0]:
+                self.viz.display(_latest_q[0])
+                time.sleep(1 / 30)   # 30 fps
+
+        if self.viz is not None:
+            _viz_thread = threading.Thread(target=_viz_loop, daemon=True)
+            _viz_thread.start()
+        # ────────────────────────────────────────────────────────────
+
         for i in range(1, n_interp + 1):
             t = i / n_interp
 
@@ -143,12 +160,18 @@ class IKSolver:
             if step_callback is not None:
                 step_callback(self._to_dict(np.degrees(q)))
 
+            # 최신 q를 viz 스레드에 전달 (비블로킹)
             if self.viz is not None:
-                self.viz.display(q)
+                _latest_q[0] = q.copy()
+
             time.sleep(dt)
 
-        # 루프 끝 후 추가 display 없음 — 마지막 프레임(q)이 곧 q_current
-        # (추가 display가 있으면 best_q로 snap-back되어 순간이동처럼 보임)
+        # ── viz 스레드 종료 & 최종 위치 동기화 ──────────────────────
+        if self.viz is not None:
+            _viz_stop[0] = True
+            _viz_thread.join(timeout=0.5)
+            self.viz.display(q)   # 정확한 최종 자세로 snap
+
         if pe < self.pos_tol and re < self.rot_tol:
             self.q_current = q.copy()
             return self._to_dict(np.degrees(q)), pe, re

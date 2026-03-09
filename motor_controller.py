@@ -246,8 +246,8 @@ if __name__ == "__main__":
     #
     # time.sleep(3)
     # #
-    # cmds = [
-    #     AngleCommand("left_joint1", -18, 1080),
-    # ]
-    #
-    # mc.move_motors_to_angle(cmds)
+    cmds = [
+        AngleCommand("left_joint6", 0, 1080),
+    ]
+
+    mc.move_motors_to_angle(cmds)
