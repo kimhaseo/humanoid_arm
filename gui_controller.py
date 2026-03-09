@@ -54,7 +54,7 @@ class IKControllerGUI:
     MOTOR_SPEED_MAX = 1080          # 하드웨어 최대 속도 [deg/s]
     JOINT_SIGN  = {
         "joint_1": -1, "joint_2": +1, "joint_3": +1, "joint_4": +1,
-        "joint_5": +1, "joint_6": +1, "joint_7": -1,
+        "joint_5": +1, "joint_6": -1, "joint_7": -1,
     }
     _debug_step = 0
 
@@ -453,7 +453,7 @@ class IKControllerGUI:
         def _worker():
             try:
                 q_dict, pos_err, rot_err = self.solver.move_to(
-                    target_pos, target_rot, n_interp=500, dt=dt_snap,
+                    target_pos, target_rot, n_interp=250, dt=dt_snap,
                     step_callback=self._send_joint_angles, viz_every=10)
             finally:
                 self._solve_lock.release()
@@ -528,7 +528,7 @@ class IKControllerGUI:
                     target_pos = np.array([x, y, z])
                     target_rot = IKSolver.euler_to_rotation(roll, pitch, yaw)
                     q_dict, pos_err, rot_err = self.solver.move_to(
-                        target_pos, target_rot, n_interp=500, dt=dt_snap,
+                        target_pos, target_rot, n_interp=250, dt=dt_snap,
                         step_callback=self._send_joint_angles)
 
                     if q_dict is None:

@@ -16,6 +16,10 @@ class MotorController:
             angle = angle_command.angle
             speed = angle_command.speed
             can_id = angle_command.can_id
+
+            if can_id == 0x145:
+                angle+=15
+
             angle_control = int(angle * 1000)
             command_byte = 0xA4
             null_byte = 0x00
