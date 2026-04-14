@@ -3,6 +3,8 @@ import numpy as np
 import pinocchio as pin
 from scipy.spatial.transform import Rotation as R
 
+from config import get_config as _get_config
+
 _HERE         = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_URDF = os.path.join(_HERE, "7dof_arm_urdf", "7dof_arm_urdf.urdf")
 _DEFAULT_MESH = os.path.join(_HERE, "7dof_arm_urdf")
@@ -14,7 +16,7 @@ class IKSolver:
     입출력 단위: rad
 
     Args:
-        ee_frame:   엔드이펙터 프레임 이름
+        ee_frame:   엔드이펙터 프레임 이름 (None → arm_config.yaml 값 사용)
         n_steps:    IK 반복 횟수
         n_restarts: 실패 시 랜덤 재시작 횟수
         pos_tol:    위치 허용 오차 [m]
@@ -25,14 +27,22 @@ class IKSolver:
 
     def __init__(
         self,
-        ee_frame:   str   = "link_end",
-        n_steps:    int   = 500,
-        n_restarts: int   = 15,
-        pos_tol:    float = 1e-3,
-        rot_tol:    float = 1e-2,
-        damping:    float = 1e-4,
-        dq_max:     float = 0.02,
+        ee_frame:   str   | None = None,
+        n_steps:    int   | None = None,
+        n_restarts: int   | None = None,
+        pos_tol:    float | None = None,
+        rot_tol:    float | None = None,
+        damping:    float | None = None,
+        dq_max:     float | None = None,
     ):
+        _d = _get_config().ik
+        ee_frame   = ee_frame   if ee_frame   is not None else _d.ee_frame
+        n_steps    = n_steps    if n_steps    is not None else _d.n_steps
+        n_restarts = n_restarts if n_restarts is not None else _d.n_restarts
+        pos_tol    = pos_tol    if pos_tol    is not None else _d.pos_tol
+        rot_tol    = rot_tol    if rot_tol    is not None else _d.rot_tol
+        damping    = damping    if damping    is not None else _d.damping
+        dq_max     = dq_max     if dq_max     is not None else _d.dq_max
         self.model, self.collision_model, self.visual_model = pin.buildModelsFromUrdf(
             _DEFAULT_URDF, _DEFAULT_MESH
         )

@@ -1,12 +1,12 @@
 import numpy as np
 
-JOINT_NAMES = [
-    "left_joint1", "left_joint2", "left_joint3",
-    "left_joint4", "left_joint5", "left_joint6", "left_joint7",
-]
+from config import get_config as _get_config
 
-FREQ = 200          # Hz
-DT   = 1.0 / FREQ  # 5 ms
+_cfg = _get_config()
+
+JOINT_NAMES = list(_cfg.joints.keys())
+FREQ        = _cfg.trajectory.frequency   # Hz
+DT          = 1.0 / FREQ                  # 5 ms
 
 
 def _quintic_coeffs(q0: float, qf: float, T: float) -> np.ndarray:

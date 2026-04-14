@@ -3,23 +3,16 @@ import threading
 import numpy as np
 import can
 
+from config import get_config as _get_config
 from rob_motor_controller import RobStrideMITMotor
 from trajectory import generate_trajectory, FREQ, DT
 from ik_solver import IKSolver
 
-# ── 조인트 → CAN ID 매핑 ──────────────────────────────────────────────────────
-JOINT_CAN_MAP = {
-    "left_joint1": 0x01,
-    "left_joint2": 0x02,
-    "left_joint3": 0x03,
-    "left_joint4": 0x04,
-    "left_joint5": 0x05,
-    "left_joint6": 0x06,
-    "left_joint7": 0x07,
-}
-
-DEFAULT_KP = 10.0
-DEFAULT_KD = 0.5
+# ── 조인트 → CAN ID 매핑 (arm_config.yaml 에서 로드) ─────────────────────────
+_cfg          = _get_config()
+JOINT_CAN_MAP = _cfg.joints           # {joint_name: can_id}
+DEFAULT_KP    = _cfg.control.default_kp
+DEFAULT_KD    = _cfg.control.default_kd
 
 
 class ArmRunner:
@@ -34,21 +27,28 @@ class ArmRunner:
                 └─ 200Hz 루프 → RobStrideMITMotor.control() × 7
 
     Args:
-        channel: CAN 인터페이스 (예: 'can0', 'COM3')
-        bustype: python-can 버스 타입 (예: 'socketcan', 'slcan')
-        bitrate: 비트레이트 (기본 1Mbps)
+        channel: CAN 인터페이스 (None → arm_config.yaml 값 사용)
+        bustype: python-can 버스 타입
+        bitrate: 비트레이트
         kp:      위치 게인 (공통 float 또는 조인트별 dict)
         kd:      속도 게인 (공통 float 또는 조인트별 dict)
     """
 
     def __init__(
         self,
-        channel: str = 'can0',
-        bustype: str = 'socketcan',
-        bitrate: int = 1_000_000,
-        kp: float | dict = DEFAULT_KP,
-        kd: float | dict = DEFAULT_KD,
+        channel: str | None   = None,
+        bustype: str | None   = None,
+        bitrate: int | None   = None,
+        kp: float | dict | None = None,
+        kd: float | dict | None = None,
     ):
+        _can = _get_config().can
+        channel = channel if channel is not None else _can.channel
+        bustype = bustype if bustype is not None else _can.bustype
+        bitrate = bitrate if bitrate is not None else _can.bitrate
+        kp      = kp      if kp      is not None else DEFAULT_KP
+        kd      = kd      if kd      is not None else DEFAULT_KD
+
         self.bus = can.interface.Bus(channel=channel, interface=bustype, bitrate=bitrate)
 
         self.motors: dict[str, RobStrideMITMotor] = {
@@ -173,7 +173,7 @@ class ArmRunner:
 # ── 실행 예시 ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    runner = ArmRunner(channel='COM3', bustype='slcan')
+    runner = ArmRunner()  # channel/bustype/bitrate → arm_config.yaml
 
     try:
         runner.enable_all()

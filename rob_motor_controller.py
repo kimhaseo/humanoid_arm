@@ -5,14 +5,18 @@ from dataclasses import dataclass
 from typing import Optional, Callable
 import can
 
-# ── 프로토콜 상수 ──────────────────────────────────────────────────────────────
-P_MIN,  P_MAX  = -12.5, 12.5   # 각도 범위 (rad)
-V_MIN,  V_MAX  = -44.0, 44.0   # 속도 범위 (rad/s)
-KP_MIN, KP_MAX =   0.0, 500.0  # Kp 범위
-KD_MIN, KD_MAX =   0.0,   5.0  # Kd 범위
-T_MIN,  T_MAX  = -17.0,  17.0  # 토크 범위 (Nm)
+from config import get_config as _get_config
 
-MASTER_CAN_ID = 0xFD
+# ── 프로토콜 상수 (arm_config.yaml → motor_limits / can.master_id) ────────────
+_ml = _get_config().motor_limits
+
+P_MIN,  P_MAX  = _ml.p_min,  _ml.p_max   # 각도 범위 (rad)
+V_MIN,  V_MAX  = _ml.v_min,  _ml.v_max   # 속도 범위 (rad/s)
+KP_MIN, KP_MAX = _ml.kp_min, _ml.kp_max  # Kp 범위
+KD_MIN, KD_MAX = _ml.kd_min, _ml.kd_max  # Kd 범위
+T_MIN,  T_MAX  = _ml.t_min,  _ml.t_max   # 토크 범위 (Nm)
+
+MASTER_CAN_ID = _get_config().can.master_id
 
 # 통신 타입 (Standard Protocol - Extended Frame)
 COMM_GET_ID          = 0x00
