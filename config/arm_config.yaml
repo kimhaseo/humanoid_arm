@@ -37,11 +37,11 @@ ik:
 # ── 모터 물리 한계 (RS01 스펙) ─────────────────────────────────────────────────
 motor_limits:
   position:
-    min: -12.5           # [rad]
-    max:  12.5
+    min: -3.14           # [rad]
+    max:  3.14
   velocity:
-    min: -44.0           # [rad/s]
-    max:  44.0
+    min: -10.0           # [rad/s]
+    max:  10.0
   kp:
     min:   0.0
     max: 500.0
