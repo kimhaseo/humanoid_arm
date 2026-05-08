@@ -1,53 +1,28 @@
 # ── CAN 버스 설정 ──────────────────────────────────────────────────────────────
 can:
-  channel: COM3          # CAN 인터페이스 (Linux: 'can0', Windows SLCAN: 'COM3')
-  bustype: slcan         # python-can 버스 타입 ('socketcan', 'slcan', 'pcan', ...)
-  bitrate: 1000000       # 비트레이트 (1 Mbps)
-  master_id: 0xFD        # 마스터 CAN ID
+  channel: COM3
+  bustype: slcan
+  bitrate: 1000000
 
 # ── 조인트 → CAN ID 매핑 ───────────────────────────────────────────────────────
 joints:
-  left_joint1: { can_id: 1 }
-  left_joint2: { can_id: 2 }
-  left_joint3: { can_id: 3 }
-  left_joint4: { can_id: 4 }
-  left_joint5: { can_id: 5 }
-  left_joint6: { can_id: 6 }
-  left_joint7: { can_id: 7 }
+  joint1: { can_id: 1 }
+  joint2: { can_id: 2 }
+  joint3: { can_id: 3 }
+  joint4: { can_id: 4 }
+  joint5: { can_id: 5 }
+  joint6: { can_id: 6 }
+  joint7: { can_id: 7 }
 
 # ── MIT 제어 게인 기본값 ───────────────────────────────────────────────────────
 control:
-  default_kp: 10.0       # 위치 게인
-  default_kd: 0.5        # 속도 게인
-
-# ── 궤적 생성 설정 ─────────────────────────────────────────────────────────────
-trajectory:
-  frequency: 200         # 제어 주파수 (Hz)
-
-# ── 역기구학 설정 ──────────────────────────────────────────────────────────────
-ik:
-  ee_frame: link_end     # 엔드이펙터 프레임 이름 (URDF 기준)
-  n_steps: 500           # 반복 횟수
-  n_restarts: 15         # 실패 시 랜덤 재시작 횟수
-  pos_tol: 0.001         # 위치 허용 오차 [m] (1 mm)
-  rot_tol: 0.01          # 자세 허용 오차 [rad] (~0.57 deg)
-  damping: 0.0001        # 댐핑 계수 (특이점 회피)
-  dq_max: 0.02           # 스텝당 최대 관절 변화량 [rad]
+  default_kp: 10.0
+  default_kd: 0.5
 
 # ── 모터 물리 한계 (RS01 스펙) ─────────────────────────────────────────────────
 motor_limits:
-  position:
-    min: -3.14           # [rad]
-    max:  3.14
-  velocity:
-    min: -10.0           # [rad/s]
-    max:  10.0
-  kp:
-    min:   0.0
-    max: 500.0
-  kd:
-    min: 0.0
-    max: 5.0
-  torque:
-    min: -17.0           # [Nm]
-    max:  17.0
+  position: { min: -12.5, max: 12.5 }    # [rad]
+  velocity: { min: -44.0, max:  44.0 }   # [rad/s]
+  kp:       { min:   0.0, max: 500.0 }
+  kd:       { min:   0.0, max:   5.0 }
+  torque:   { min: -17.0, max:  17.0 }   # [Nm]
