@@ -1,0 +1,7 @@
+# JARVIS 음성 비서 의존성
+ollama
+faster-whisper
+pyaudio
+numpy
+edge-tts
+pygame

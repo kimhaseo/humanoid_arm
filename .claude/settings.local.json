@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(winget install *)",
+      "Bash(where.exe ollama *)",
+      "Bash(dir \"C:\\\\Users\\\\gktj0\\\\AppData\\\\Local\\\\Programs\\\\Ollama\\\\\" 2>&1)",
+      "PowerShell(Get-Command ollama -ErrorAction SilentlyContinue; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\\\\Ollama\\\\\" -ErrorAction SilentlyContinue)",
+      "PowerShell(& \"$env:LOCALAPPDATA\\\\Programs\\\\Ollama\\\\ollama.exe\" pull gemma3:4b)",
+      "PowerShell(pip install ollama 2>&1)",
+      "WebSearch"
+    ]
+  }
+}
