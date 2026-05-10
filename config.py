@@ -33,9 +33,16 @@ class MotorLimits:
 
 
 @dataclass
+class JointConfig:
+    can_id:     int
+    limit_min:  float   # rad
+    limit_max:  float   # rad
+
+
+@dataclass
 class ArmConfig:
     can:          CanConfig
-    joints:       dict[str, int]   # joint_name → can_id
+    joints:       dict[str, JointConfig]
     control:      ControlConfig
     motor_limits: MotorLimits
 
@@ -57,7 +64,15 @@ def _load(path: str) -> ArmConfig:
     c = raw["can"]
     can_cfg = CanConfig(channel=c["channel"], bustype=c["bustype"], bitrate=int(c["bitrate"]))
 
-    joints = {name: int(info["can_id"]) for name, info in raw["joints"].items()}
+    import math
+    joints = {
+        name: JointConfig(
+            can_id=int(info["can_id"]),
+            limit_min=math.radians(float(info["limit_min"])),
+            limit_max=math.radians(float(info["limit_max"])),
+        )
+        for name, info in raw["joints"].items()
+    }
 
     ctrl = raw["control"]
     control_cfg = ControlConfig(default_kp=float(ctrl["default_kp"]), default_kd=float(ctrl["default_kd"]))

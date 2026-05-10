@@ -4,20 +4,18 @@ can:
   bustype: slcan
   bitrate: 1000000
 
-# ── 조인트 → CAN ID 매핑 ───────────────────────────────────────────────────────
+# ── 조인트 → CAN ID 매핑 + 각도 리밋 (단위: deg) ──────────────────────────────
 joints:
-  joint1: { can_id: 1 }
-  joint2: { can_id: 2 }
-  joint3: { can_id: 3 }
-  joint4: { can_id: 4 }
-  joint5: { can_id: 5 }
-  joint6: { can_id: 6 }
-  joint7: { can_id: 7 }
+  joint1: { can_id: 1, limit_min: -90.0, limit_max:  90.0 }
+  joint2: { can_id: 2, limit_min: -10.0, limit_max:  90.0 }
+  joint3: { can_id: 3, limit_min: -90.0, limit_max:  90.0 }
+  joint4: { can_id: 4, limit_min: -50.0, limit_max:  90.0 }
+
 
 # ── MIT 제어 게인 기본값 ───────────────────────────────────────────────────────
 control:
-  default_kp: 10.0
-  default_kd: 0.5
+  default_kp: 5.0
+  default_kd: 1.0
 
 # ── 모터 물리 한계 (RS01 스펙) ─────────────────────────────────────────────────
 motor_limits:
