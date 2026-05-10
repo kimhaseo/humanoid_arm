@@ -7,7 +7,8 @@
       "PowerShell(Get-Command ollama -ErrorAction SilentlyContinue; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\\\\Ollama\\\\\" -ErrorAction SilentlyContinue)",
       "PowerShell(& \"$env:LOCALAPPDATA\\\\Programs\\\\Ollama\\\\ollama.exe\" pull gemma3:4b)",
       "PowerShell(pip install ollama 2>&1)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(python3 -c \"from config import get_config; cfg = get_config\\(\\); print\\({name: \\(j.kp, j.kd\\) for name, j in cfg.joints.items\\(\\)}\\)\")"
     ]
   }
 }

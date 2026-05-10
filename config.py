@@ -37,6 +37,8 @@ class JointConfig:
     can_id:     int
     limit_min:  float   # rad
     limit_max:  float   # rad
+    kp:         float   # position gain (overrides control.default_kp)
+    kd:         float   # velocity gain (overrides control.default_kd)
 
 
 @dataclass
@@ -65,17 +67,19 @@ def _load(path: str) -> ArmConfig:
     can_cfg = CanConfig(channel=c["channel"], bustype=c["bustype"], bitrate=int(c["bitrate"]))
 
     import math
+    ctrl = raw["control"]
+    control_cfg = ControlConfig(default_kp=float(ctrl["default_kp"]), default_kd=float(ctrl["default_kd"]))
+
     joints = {
         name: JointConfig(
             can_id=int(info["can_id"]),
             limit_min=math.radians(float(info["limit_min"])),
             limit_max=math.radians(float(info["limit_max"])),
+            kp=float(info["kp"]) if "kp" in info else control_cfg.default_kp,
+            kd=float(info["kd"]) if "kd" in info else control_cfg.default_kd,
         )
         for name, info in raw["joints"].items()
     }
-
-    ctrl = raw["control"]
-    control_cfg = ControlConfig(default_kp=float(ctrl["default_kp"]), default_kd=float(ctrl["default_kd"]))
 
     ml = raw["motor_limits"]
     limits_cfg = MotorLimits(

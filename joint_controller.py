@@ -43,10 +43,13 @@ class _Motor:
     MASTER_ID = MASTER_CAN_ID  # 0xFD
 
     def __init__(self, can_id: int, bus: can.interface.Bus,
-                 limit_min: float = P_MIN, limit_max: float = P_MAX):
+                 limit_min: float = P_MIN, limit_max: float = P_MAX,
+                 kp: float = DEFAULT_KP, kd: float = DEFAULT_KD):
         self.can_id     = can_id
         self.limit_min  = limit_min
         self.limit_max  = limit_max
+        self.kp         = kp
+        self.kd         = kd
         self.state  = MotorState()
         self.bus    = bus
         self._run_mode_cache = -1
@@ -102,8 +105,8 @@ class _Motor:
         self,
         angle:  float = 0.0,
         speed:  float = 0.0,
-        kp:     float = DEFAULT_KP,
-        kd:     float = DEFAULT_KD,
+        kp:     float | None = None,
+        kd:     float | None = None,
         torque: float = 0.0,
     ):
         """
@@ -116,6 +119,10 @@ class _Motor:
             kd:     속도 게인         (0 ~ 5)
             torque: feedforward 토크 [Nm] (-17 ~ 17)
         """
+        if kp is None:
+            kp = self.kp
+        if kd is None:
+            kd = self.kd
         angle = max(self.limit_min, min(self.limit_max, angle))
 
         self._set_run_mode(MODE_MOVE)
@@ -171,6 +178,8 @@ class JointController:
                 bus=self.bus,
                 limit_min=jcfg.limit_min,
                 limit_max=jcfg.limit_max,
+                kp=jcfg.kp,
+                kd=jcfg.kd,
             )
             for name, jcfg in JOINT_CONFIGS.items()
         }
@@ -211,8 +220,8 @@ class JointController:
         self,
         angles:  dict[str, float],
         speeds:  dict[str, float] | None = None,
-        kp:      float | dict[str, float] = DEFAULT_KP,
-        kd:      float | dict[str, float] = DEFAULT_KD,
+        kp:      float | dict[str, float] | None = None,
+        kd:      float | dict[str, float] | None = None,
         torques: dict[str, float] | None = None,
     ):
         """
@@ -221,8 +230,8 @@ class JointController:
         Args:
             angles:  {'joint1': rad, ...} 목표 각도
             speeds:  {'joint1': rad/s, ...} 목표 속도 (기본 0.0)
-            kp:      위치 게인 - 단일 float 또는 조인트별 dict
-            kd:      속도 게인 - 단일 float 또는 조인트별 dict
+            kp:      위치 게인 - 단일 float, 조인트별 dict, 또는 None(config 값 사용)
+            kd:      속도 게인 - 단일 float, 조인트별 dict, 또는 None(config 값 사용)
             torques: {'joint1': Nm, ...} feedforward 토크 (기본 0.0)
         """
         for name, motor in self.motors.items():
@@ -231,8 +240,8 @@ class JointController:
             motor.control(
                 angle  = angles[name],
                 speed  = (speeds  or {}).get(name, 0.0),
-                kp     = kp[name] if isinstance(kp, dict) else kp,
-                kd     = kd[name] if isinstance(kd, dict) else kd,
+                kp     = kp.get(name) if isinstance(kp, dict) else kp,
+                kd     = kd.get(name) if isinstance(kd, dict) else kd,
                 torque = (torques or {}).get(name, 0.0),
             )
 
@@ -241,11 +250,11 @@ class JointController:
         joint_name: str,
         angle:  float,
         speed:  float = 0.0,
-        kp:     float = DEFAULT_KP,
-        kd:     float = DEFAULT_KD,
+        kp:     float | None = None,
+        kd:     float | None = None,
         torque: float = 0.0,
     ):
-        """단일 조인트 복합 제어 명령 전송."""
+        """단일 조인트 복합 제어 명령 전송. kp/kd 미지정 시 config 값 사용."""
         self.motors[joint_name].control(angle=angle, speed=speed, kp=kp, kd=kd, torque=torque)
 
     # ── 영점 설정 ──────────────────────────────────────────────────────────────
