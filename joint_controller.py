@@ -4,6 +4,7 @@ robstride_motor_controller.py와 동일한 Extended Frame 프로토콜 사용.
 CAN 버스 1개를 7개 모터가 공유하는 구조.
 """
 
+import math
 import time
 import threading
 import can
@@ -53,6 +54,7 @@ class _Motor:
         self.state  = MotorState()
         self.bus    = bus
         self._run_mode_cache = -1
+        self._state_event = threading.Event()
 
     def _send_ext(self, comm_type: int, data: bytes, data_field: int = 0):
         ext_id = (comm_type << 24) | (data_field << 8) | self.can_id
@@ -75,6 +77,19 @@ class _Motor:
             self.state.torque = uint_to_float((data[4] << 8) | data[5], T_MIN, T_MAX, 16)
             self.state.temp   = ((data[6] << 8) | data[7]) * 0.1
             self.state.error  = (ext_id >> 16) & 0x3F
+            self._state_event.set()
+
+    def request_state(self):
+        """현재 상태 요청 (COMM_MOTOR_REQUEST 0x02)."""
+        self._send_ext(COMM_MOTOR_REQUEST, bytes(8), self.MASTER_ID)
+
+    def fetch_state(self, timeout: float = 0.2) -> MotorState:
+        """상태 요청 후 응답이 올 때까지 대기. timeout 초과 시 TimeoutError."""
+        self._state_event.clear()
+        self.request_state()
+        if not self._state_event.wait(timeout):
+            raise TimeoutError(f"모터 {self.can_id} 상태 요청 응답 없음 (timeout={timeout}s)")
+        return self.state
 
     def enable(self):
         self._send_ext(COMM_MOTOR_ENABLE, bytes(8), self.MASTER_ID)
@@ -149,6 +164,70 @@ class _Motor:
 
         msg = can.Message(arbitration_id=ext_id, data=list(data), is_extended_id=True)
         self.bus.send(msg)
+
+
+def _trapezoid_profile(
+    q0: float,
+    q1: float,
+    max_vel: float,
+    max_acc: float,
+    dt: float = 0.02,
+) -> list[tuple[float, float]]:
+    """
+    사다리꼴 속도 프로파일로 q0 → q1 궤적 생성.
+
+    Returns:
+        [(position, velocity), ...] at dt 간격.
+        마지막 웨이포인트는 항상 (q1, 0.0).
+    """
+    if max_vel <= 0:
+        raise ValueError(f"max_vel은 양수여야 합니다: {max_vel}")
+    if max_acc <= 0:
+        raise ValueError(f"max_acc은 양수여야 합니다: {max_acc}")
+
+    d = q1 - q0
+    if abs(d) < 1e-6:
+        return [(q0, 0.0)]
+
+    sign = 1.0 if d > 0 else -1.0
+    dist = abs(d)
+
+    t_acc = max_vel / max_acc
+    d_acc = 0.5 * max_acc * t_acc ** 2
+
+    if 2 * d_acc >= dist:
+        # 삼각형 프로파일 (최대속도 도달 전에 감속)
+        t_acc = math.sqrt(dist / max_acc)
+        v_peak = max_acc * t_acc
+        t_flat = 0.0
+    else:
+        v_peak = max_vel
+        t_flat = (dist - 2 * d_acc) / max_vel
+
+    t_total = 2 * t_acc + t_flat
+    waypoints: list[tuple[float, float]] = []
+    t = 0.0
+    while t < t_total:
+        if t < t_acc:
+            v = max_acc * t * sign
+            p = q0 + sign * 0.5 * max_acc * t ** 2
+        elif t < t_acc + t_flat:
+            dt_f = t - t_acc
+            v = v_peak * sign
+            p = q0 + sign * (0.5 * max_acc * t_acc ** 2 + v_peak * dt_f)
+        else:
+            dt_d = t - t_acc - t_flat
+            v = (v_peak - max_acc * dt_d) * sign
+            p = q0 + sign * (
+                0.5 * max_acc * t_acc ** 2
+                + v_peak * t_flat
+                + v_peak * dt_d - 0.5 * max_acc * dt_d ** 2
+            )
+        waypoints.append((p, v))
+        t += dt
+
+    waypoints.append((q1, 0.0))
+    return waypoints
 
 
 class JointController:
@@ -264,6 +343,116 @@ class JointController:
             motor.set_zero()
         print("[JointController] 전체 모터 영점 설정")
 
+    # ── 가감속 궤적 이동 ───────────────────────────────────────────────────────
+
+    def fetch_current_positions(self, timeout: float = 0.2) -> dict[str, float]:
+        """
+        모든 조인트 현재 위치를 모터에서 직접 읽어 반환 [rad].
+        현재 위치가 joint limit을 벗어나면 ValueError 발생.
+        """
+        positions: dict[str, float] = {}
+        for name, motor in self.motors.items():
+            state = motor.fetch_state(timeout=timeout)
+            angle = state.angle
+            if angle < motor.limit_min or angle > motor.limit_max:
+                raise ValueError(
+                    f"[{name}] 현재 위치 {math.degrees(angle):.2f}° 가 "
+                    f"리밋 범위 [{math.degrees(motor.limit_min):.1f}°, "
+                    f"{math.degrees(motor.limit_max):.1f}°] 를 벗어났습니다."
+                )
+            positions[name] = angle
+        return positions
+
+    def move_joints_traj(
+        self,
+        angles:   dict[str, float],
+        max_vel:  float | dict[str, float] = 1.0,
+        max_acc:  float | dict[str, float] = 2.0,
+        dt:       float = 0.01,
+        kp:       float | dict[str, float] | None = None,
+        kd:       float | dict[str, float] | None = None,
+        wait:     bool = True,
+    ):
+        """
+        현재 위치를 읽고 사다리꼴 가감속 궤적으로 목표 위치까지 이동.
+
+        Args:
+            angles:  {'joint1': rad, ...} 목표 각도
+            max_vel: 최대 속도 [rad/s] — 단일 값 또는 조인트별 dict
+            max_acc: 최대 가속도 [rad/s²] — 단일 값 또는 조인트별 dict
+            dt:      제어 주기 [s] (기본 10ms = 100Hz)
+            kp/kd:   게인 (None 이면 config 값 사용)
+            wait:    True 이면 이동 완료 후 반환
+        """
+        def _get(param, name):
+            return param.get(name) if isinstance(param, dict) else param
+
+        current = self.fetch_current_positions()
+
+        # 조인트별 궤적 생성
+        trajs: dict[str, list[tuple[float, float]]] = {}
+        for name in angles:
+            if name not in self.motors:
+                raise KeyError(f"알 수 없는 조인트: {name}")
+            q0 = current[name]
+            q1 = angles[name]
+            motor = self.motors[name]
+            q1 = max(motor.limit_min, min(motor.limit_max, q1))
+            mv = _get(max_vel, name) or 1.0
+            ma = _get(max_acc, name) or 2.0
+            trajs[name] = _trapezoid_profile(q0, q1, mv, ma, dt)
+
+        # 가장 긴 궤적 길이에 맞춰 나머지를 마지막 값으로 패딩
+        max_len = max(len(t) for t in trajs.values())
+        for name in trajs:
+            last = trajs[name][-1]
+            while len(trajs[name]) < max_len:
+                trajs[name].append(last)
+
+        def _run():
+            # 절대 시각 기준으로 sleep → 드리프트 누적 방지
+            t_next = time.perf_counter()
+            for step in range(max_len):
+                for name, waypoints in trajs.items():
+                    pos, vel = waypoints[step]
+                    self.motors[name].control(
+                        angle  = pos,
+                        speed  = vel,
+                        kp     = _get(kp, name),
+                        kd     = _get(kd, name),
+                    )
+                t_next += dt
+                remaining = t_next - time.perf_counter()
+                if remaining > 0:
+                    time.sleep(remaining)
+
+        if wait:
+            _run()
+        else:
+            threading.Thread(target=_run, daemon=True).start()
+
+    def move_joint_traj(
+        self,
+        joint_name: str,
+        angle:    float,
+        max_vel:  float = 1.0,
+        max_acc:  float = 2.0,
+        dt:       float = 0.01,
+        kp:       float | None = None,
+        kd:       float | None = None,
+        wait:     bool = True,
+    ):
+        """단일 조인트 가감속 궤적 이동."""
+        self.move_joints_traj(
+            angles  = {joint_name: angle},
+            max_vel = {joint_name: max_vel},
+            max_acc = {joint_name: max_acc},
+            dt      = dt,
+            kp      = {joint_name: kp} if kp is not None else None,
+            kd      = {joint_name: kd} if kd is not None else None,
+            wait    = wait,
+        )
+
     # ── 상태 조회 ──────────────────────────────────────────────────────────────
 
     def get_states(self) -> dict[str, dict]:
@@ -297,9 +486,9 @@ class JointController:
 # ── 사용 예시 ──────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    import can as _can
-    from dummy_bus import DummyBus
-    _can.interface.Bus = lambda **kwargs: DummyBus()
+    # import can as _can
+    # from dummy_bus import DummyBus
+    # _can.interface.Bus = lambda **kwargs: DummyBus()
 
     jc = JointController()
 
@@ -307,19 +496,31 @@ if __name__ == '__main__':
         jc.enable_all()
         time.sleep(0.5)
 
-        jc.set_joints(
+        print("[1] 원점으로 가감속 이동")
+        jc.move_joints_traj(
             angles={f'joint{i}': 0.0 for i in range(1, 5)},
-            speeds={f'joint{i}': 0.0 for i in range(1, 5)},
+            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
         )
-        time.sleep(2.0)
         jc.print_states()
 
-        jc.set_joints(
-            angles={'joint1':  0.0, 'joint2': 0.0, 'joint3': 0.0, 'joint4': 0.0},
-            speeds={'joint1':  0.0, 'joint2': 0.0, 'joint3': 0.0, 'joint4': 0.0},
-            kp=5.0, kd=1.0,
+        print("[2] 목표 위치로 가감속 이동")
+        jc.move_joints_traj(
+            angles={'joint1': 0.5, 'joint2': 0.5, 'joint3': 0.5, 'joint4': 0.5},
+            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
         )
-        time.sleep(2.0)
+        jc.print_states()
+
+        print("[3] 반대 방향으로 가감속 이동")
+        jc.move_joints_traj(
+            angles={'joint1': -1.0, 'joint2': 0.1, 'joint3': -0.5, 'joint4': -0.5},
+            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
+        )
+
+        print("[4] 원점 복귀")
+        jc.move_joints_traj(
+            angles={f'joint{i}': 0.0 for i in range(1, 5)},
+            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
+        )
         jc.print_states()
 
     except KeyboardInterrupt:

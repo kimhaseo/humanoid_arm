@@ -17,20 +17,102 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
     if _d not in os.environ.get("PATH",""):
         os.environ["PATH"] = _d + os.pathsep + os.environ.get("PATH","")
 
-    import asyncio, re, tempfile, threading, time
+    import asyncio, re, tempfile, threading, time, logging, traceback
     from collections import deque
     from datetime import datetime
 
     import edge_tts, numpy as np, ollama, sounddevice as sd
     from faster_whisper import WhisperModel
 
+    logging.basicConfig(
+        filename="jarvis.log",
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        encoding="utf-8",
+    )
+    log = logging.getLogger("jarvis")
+
     SR=16000; CH=1; CHUNK=int(SR*0.1)
     THR=0.005; SIL=0.7; MIN_DUR=0.3; MAX_REC=30.0
-    MIC="UM-200"; WM="small"; VOICE="ko-KR-HyunsuNeural"; RATE="+25%"; LLM="gemma3:4b"
+    MIC="UM-200"; WM="small"; VOICE="ko-KR-HyunsuNeural"; RATE="+25%"; LLM="qwen2.5:14b"
     PROMPT=("너는 자비스야. 나한테 완전 친한 친구처럼 말해.\n"
             "반말 쓰고, 편하게 툭툭 던지듯이 얘기해줘.\n"
             "이모지, 이모티콘, 특수문자 절대 쓰지 마.\n"
-            "2문장 이내로 짧고 빠릿하게 답해. 영어 쓰지 마.")
+            "2문장 이내로 짧고 빠릿하게 답해. 영어 쓰지 마.\n"
+            "로봇팔 조인트(joint1~joint4)를 라디안 단위로 제어할 수 있어. "
+            "팔 움직임 명령이 오면 move_joints 도구를 사용해. "
+            "enable_motors, disable_motors로 모터 켜고 끄기 가능.")
+
+    # ── 로봇팔 Tool 정의 ──────────────────────────────────────────────────────────
+    ARM_TOOLS = [
+        {
+            "type": "function",
+            "function": {
+                "name": "move_joints",
+                "description": "로봇팔 조인트를 목표 각도로 이동. 각도 단위: 라디안.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "angles": {
+                            "type": "object",
+                            "description": "조인트 이름과 목표 각도(rad). 예: {\"joint1\": 0.5}",
+                            "additionalProperties": {"type": "number"}
+                        }
+                    },
+                    "required": ["angles"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "enable_motors",
+                "description": "로봇팔 전체 모터 활성화.",
+                "parameters": {"type": "object", "properties": {}}
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "disable_motors",
+                "description": "로봇팔 전체 모터 비활성화.",
+                "parameters": {"type": "object", "properties": {}}
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_joint_states",
+                "description": "현재 조인트 상태(각도, 속도, 토크, 온도) 조회.",
+                "parameters": {"type": "object", "properties": {}}
+            }
+        },
+    ]
+
+    def dispatch_tool(tc, arm):
+        name = tc.function.name
+        args = tc.function.arguments if hasattr(tc.function, "arguments") else {}
+        if name == "move_joints":
+            angles = args.get("angles", {})
+            arm.set_joints(angles=angles)
+            readable = ", ".join(f"{k}={v:.3f}rad" for k, v in angles.items())
+            log.info(f"move_joints 실행: {readable}")
+            return f"이동 완료: {readable}"
+        elif name == "enable_motors":
+            arm.enable_all()
+            log.info("enable_motors 실행")
+            return "모터 활성화 완료"
+        elif name == "disable_motors":
+            arm.disable_all()
+            log.info("disable_motors 실행")
+            return "모터 비활성화 완료"
+        elif name == "get_joint_states":
+            states = arm.get_states()
+            lines = [f"{n}: {s['angle']:.3f}rad" for n, s in states.items()]
+            result = "현재 상태: " + ", ".join(lines)
+            log.info(result)
+            return result
+        return "알 수 없는 명령"
 
     import re as _re
     _EMOJI_RE = _re.compile(
@@ -83,12 +165,16 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
     def find_mic():
         devices = sd.query_devices()
         candidates = [(i, d) for i, d in enumerate(devices) if d["max_input_channels"] > 0]
+        log.info(f"입력 장치 목록: {[(i, d['name']) for i, d in candidates]}")
         for i, d in candidates:
-            if MIC.lower() in d["name"].lower(): return i
-        lines = [f"[{i}] {d['name']}" for i,d in candidates]
-        send({"t":"status","v":f"MIC '{MIC}' 없음:\n" + "\n".join(lines)})
+            if MIC.lower() in d["name"].lower():
+                log.info(f"마이크 선택: [{i}] {d['name']}")
+                return i
+        log.warning(f"'{MIC}' 없음, 기본 장치 사용")
+        send({"t":"status","v":f"MIC '{MIC}' 없음 - 기본 장치 사용"})
         default = sd.default.device[0]
-        if default >= 0: return default
+        if isinstance(default, int) and 0 <= default < len(devices):
+            return default
         return candidates[0][0] if candidates else None
 
     send({"t":"status","v":"INIT"})
@@ -96,8 +182,20 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
     client=ollama.Client(); mic=find_mic()
     tts=TTS(); hist=[]
 
+    # ── 로봇팔 초기화 ──────────────────────────────────────────────────────────
+    arm = None
+    try:
+        from joint_controller import JointController
+        arm = JointController()
+        arm.enable_all()
+        log.info("JointController 초기화 성공")
+        send({"t":"status","v":"ARM_READY"})
+    except Exception as _arm_err:
+        log.warning(f"JointController 초기화 실패: {_arm_err}")
+        send({"t":"status","v":f"ARM_OFF:{_arm_err}"})
+
     now=lambda: __import__('datetime').datetime.now().strftime("%H:%M:%S")
-    greeting="어 나왔어. 뭐 필요해?"
+    greeting="yo"
     send({"t":"ai","ts":now(),"text":greeting})
     tts.put(greeting); tts.done(); send({"t":"status","v":"WAIT"})
 
@@ -105,8 +203,16 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
         try:
             send({"t":"status","v":"WAIT"})
             buf=[]; sil_t=None; speaking=False; t0=None
+            _open_dev = mic
+            try:
+                _test = sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+                                       blocksize=CHUNK,device=_open_dev)
+                _test.close()
+            except Exception as _mic_open_err:
+                log.warning(f"마이크 [{mic}] 열기 실패: {_mic_open_err} → 기본 장치로 재시도")
+                mic = None; _open_dev = None
             with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
-                                blocksize=CHUNK,device=mic) as stream:
+                                blocksize=CHUNK,device=_open_dev) as stream:
                 while not speaking:
                     c,_=stream.read(CHUNK); c=c[:,0]
                     send({"t":"mic","v":rms(c)})
@@ -140,23 +246,52 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
             hist.append({"role":"user","content":text})
             msgs=[{"role":"system","content":PROMPT}]+hist
             send({"t":"status","v":"LLM"}); send({"t":"stream","v":""})
-            full=""; sbuf=""; first=True
-            for ck in client.chat(model=LLM,messages=msgs,stream=True):
-                tok=ck.message.content; full+=tok; sbuf+=tok
-                send({"t":"stream","v":full})
-                parts=SENT.split(sbuf)
-                if len(parts)>1:
-                    for s in parts[:-1]:
-                        if s.strip():
-                            tts.put(s.strip())
-                            if first: send({"t":"status","v":"TTS"}); first=False
-                    sbuf=parts[-1]
-            if sbuf.strip(): tts.put(sbuf.strip())
+            log.info(f"사용자 입력: {text}")
+
+            log.debug(f"LLM 호출 (tools={'ON' if arm else 'OFF'})")
+            resp = client.chat(
+                model=LLM,
+                messages=msgs,
+                tools=ARM_TOOLS if arm else None,
+            )
+            log.debug(f"LLM 응답: content={repr(resp.message.content)}, tool_calls={resp.message.tool_calls}")
+
+            if arm and resp.message.tool_calls:
+                log.info(f"Tool 호출: {[tc.function.name for tc in resp.message.tool_calls]}")
+                tool_msgs = msgs + [resp.message]
+                for tc in resp.message.tool_calls:
+                    result = dispatch_tool(tc, arm)
+                    tool_msgs.append({"role": "tool", "content": result, "name": tc.function.name})
+                resp = client.chat(model=LLM, messages=tool_msgs)
+
+            full = resp.message.content or ""
+            full_clean = full.strip()
+            send({"t":"stream","v":full_clean})
+
+            # 문장 단위로 TTS 전송
+            first = True
+            for s in SENT.split(full_clean):
+                if s.strip():
+                    tts.put(s.strip())
+                    if first: send({"t":"status","v":"TTS"}); first=False
+
             hist.append({"role":"assistant","content":full})
-            send({"t":"stream","v":""}); send({"t":"ai","ts":now(),"text":full})
+            send({"t":"stream","v":""}); send({"t":"ai","ts":now(),"text":full_clean})
             tts.done(); send({"t":"status","v":"WAIT"})
         except Exception as e:
+            log.error(f"메인 루프 오류:\n{traceback.format_exc()}")
+            if "PortAudioError" in type(e).__name__ or "sounddevice" in str(e).lower():
+                log.warning("마이크 오류 — 장치 재탐색")
+                mic = find_mic()
             send({"t":"status","v":f"ERR:{e})"}); __import__('time').sleep(1)
+
+    # 루프 종료 후 팔 정리
+    if arm:
+        try:
+            arm.disable_all(clear_error=True)
+            arm.shutdown()
+        except Exception:
+            pass
 
 
 # ══════════════════════════════════════════════════════════════════════════════
