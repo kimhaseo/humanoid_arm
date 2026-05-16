@@ -6,10 +6,10 @@ can:
 
 # ── 조인트 → CAN ID 매핑 + 각도 리밋 (단위: deg) ──────────────────────────────
 joints:
-  joint1: { can_id: 1, limit_min: -90.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
-  joint2: { can_id: 2, limit_min: -10.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
-  joint3: { can_id: 3, limit_min: -90.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
-  joint4: { can_id: 4, limit_min: -50.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
+  joint1: { can_id: 1, motor_model: RS06, limit_min: -90.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
+  joint2: { can_id: 2, motor_model: RS06, limit_min: -10.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
+  joint3: { can_id: 3, motor_model: RS02, limit_min: -90.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
+  joint4: { can_id: 4, motor_model: RS02, limit_min: -50.0, limit_max:  90.0, kp: 5.0, kd: 1.0 }
 
 
 # ── MIT 제어 게인 기본값 (조인트별 kp/kd 미지정 시 폴백) ──────────────────────
@@ -17,10 +17,17 @@ control:
   default_kp: 5.0
   default_kd: 1.0
 
-# ── 모터 물리 한계 (RS01 스펙) ─────────────────────────────────────────────────
+# ── 모터 물리 한계 (공통) ──────────────────────────────────────────────────────
 motor_limits:
-  position: { min: -12.5, max: 12.5 }    # [rad]
-  velocity: { min: -44.0, max:  44.0 }   # [rad/s]
+  position: { min: -12.5, max: 12.5 }    # [rad] 공통
   kp:       { min:   0.0, max: 500.0 }
   kd:       { min:   0.0, max:   5.0 }
-  torque:   { min: -17.0, max:  17.0 }   # [Nm]
+
+# ── 모터 모델별 스펙 ───────────────────────────────────────────────────────────
+motor_models:
+  RS02:
+    velocity: { min: -44.0, max:  44.0 }  # [rad/s]
+    torque:   { min: -17.0, max:  17.0 }  # [Nm]
+  RS06:
+    velocity: { min: -15.0, max:  15.0 }  # [rad/s]
+    torque:   { min: -60.0, max:  60.0 }  # [Nm]

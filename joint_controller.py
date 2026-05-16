@@ -13,7 +13,7 @@ from robstride_motor_controller import (
     COMM_MOTOR_ENABLE, COMM_MOTOR_STOP, COMM_SET_POS_ZERO,
     COMM_MOTION_CTRL, COMM_MOTOR_REQUEST,
     COMM_SET_PARAM, IDX_RUN_MODE, MODE_MOVE,
-    MASTER_CAN_ID,
+    MASTER_CAN_ID, KP_MIN, KP_MAX, KD_MIN, KD_MAX,
 )
 from config import get_config
 
@@ -29,10 +29,10 @@ DEFAULT_KD = _cfg.control.default_kd
 JOINT_CONFIGS = _cfg.joints  # dict[str, JointConfig]
 
 P_MIN,  P_MAX  = _cfg.motor_limits.p_min,  _cfg.motor_limits.p_max
-V_MIN,  V_MAX  = _cfg.motor_limits.v_min,  _cfg.motor_limits.v_max
 KP_MIN, KP_MAX = _cfg.motor_limits.kp_min, _cfg.motor_limits.kp_max
 KD_MIN, KD_MAX = _cfg.motor_limits.kd_min, _cfg.motor_limits.kd_max
-T_MIN,  T_MAX  = _cfg.motor_limits.t_min,  _cfg.motor_limits.t_max
+
+MOTOR_MODELS = _cfg.motor_models  # dict[str, MotorModelSpec]
 
 
 class _Motor:
@@ -45,12 +45,18 @@ class _Motor:
 
     def __init__(self, can_id: int, bus: can.interface.Bus,
                  limit_min: float = P_MIN, limit_max: float = P_MAX,
-                 kp: float = DEFAULT_KP, kd: float = DEFAULT_KD):
+                 kp: float = DEFAULT_KP, kd: float = DEFAULT_KD,
+                 v_min: float = -44.0, v_max: float = 44.0,
+                 t_min: float = -17.0, t_max: float = 17.0):
         self.can_id     = can_id
         self.limit_min  = limit_min
         self.limit_max  = limit_max
         self.kp         = kp
         self.kd         = kd
+        self.v_min      = v_min
+        self.v_max      = v_max
+        self.t_min      = t_min
+        self.t_max      = t_max
         self.state  = MotorState()
         self.bus    = bus
         self._run_mode_cache = -1
@@ -73,8 +79,8 @@ class _Motor:
         if comm_type == COMM_MOTOR_REQUEST:
             data = bytes(msg.data)
             self.state.angle  = uint_to_float((data[0] << 8) | data[1], P_MIN, P_MAX, 16)
-            self.state.speed  = uint_to_float((data[2] << 8) | data[3], V_MIN, V_MAX, 16)
-            self.state.torque = uint_to_float((data[4] << 8) | data[5], T_MIN, T_MAX, 16)
+            self.state.speed  = uint_to_float((data[2] << 8) | data[3], self.v_min, self.v_max, 16)
+            self.state.torque = uint_to_float((data[4] << 8) | data[5], self.t_min, self.t_max, 16)
             self.state.temp   = ((data[6] << 8) | data[7]) * 0.1
             self.state.error  = (ext_id >> 16) & 0x3F
             self._state_event.set()
@@ -144,11 +150,11 @@ class _Motor:
         if not self.state.enabled:
             self.enable()
 
-        torque_enc = float_to_uint(torque, T_MIN, T_MAX, 16)
+        torque_enc = float_to_uint(torque, self.t_min, self.t_max, 16)
         ext_id = (COMM_MOTION_CTRL << 24) | (torque_enc << 8) | self.can_id
 
         angle_enc = float_to_uint(angle, P_MIN, P_MAX, 16)
-        speed_enc = float_to_uint(speed, V_MIN, V_MAX, 16)
+        speed_enc = float_to_uint(speed, self.v_min, self.v_max, 16)
         kp_enc    = float_to_uint(kp,    KP_MIN, KP_MAX, 16)
         kd_enc    = float_to_uint(kd,    KD_MIN, KD_MAX, 16)
 
@@ -259,6 +265,10 @@ class JointController:
                 limit_max=jcfg.limit_max,
                 kp=jcfg.kp,
                 kd=jcfg.kd,
+                v_min=MOTOR_MODELS[jcfg.motor_model].v_min,
+                v_max=MOTOR_MODELS[jcfg.motor_model].v_max,
+                t_min=MOTOR_MODELS[jcfg.motor_model].t_min,
+                t_max=MOTOR_MODELS[jcfg.motor_model].t_max,
             )
             for name, jcfg in JOINT_CONFIGS.items()
         }
