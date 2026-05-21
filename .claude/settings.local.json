@@ -10,7 +10,14 @@
       "WebSearch",
       "Bash(python3 -c \"from config import get_config; cfg = get_config\\(\\); print\\({name: \\(j.kp, j.kd\\) for name, j in cfg.joints.items\\(\\)}\\)\")",
       "Bash(ollama pull *)",
-      "Bash(.venv/bin/python -c ' *)"
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(python ik_solver.py)",
+      "Bash(python3 -c \"from pinocchio.visualize import MeshcatVisualizer; print\\('ok'\\)\")",
+      "Bash(pip install *)",
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -c \"import sys; print\\(sys.path\\)\")",
+      "Bash(ls /opt/homebrew/lib/python3.14/site-packages/ | grep -i \"can\\\\|pinocchio\")"
     ]
   }
 }

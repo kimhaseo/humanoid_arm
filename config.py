@@ -44,6 +44,7 @@ class JointConfig:
     limit_max:   float  # rad
     kp:          float  # position gain (overrides control.default_kp)
     kd:          float  # velocity gain (overrides control.default_kd)
+    sign:        int    # 1 or -1 — 모터 장착 방향 보정
 
 
 @dataclass
@@ -84,6 +85,7 @@ def _load(path: str) -> ArmConfig:
             limit_max=math.radians(float(info["limit_max"])),
             kp=float(info["kp"]) if "kp" in info else control_cfg.default_kp,
             kd=float(info["kd"]) if "kd" in info else control_cfg.default_kd,
+            sign=int(info.get("sign", 1)),
         )
         for name, info in raw["joints"].items()
     }

@@ -47,7 +47,8 @@ class _Motor:
                  limit_min: float = P_MIN, limit_max: float = P_MAX,
                  kp: float = DEFAULT_KP, kd: float = DEFAULT_KD,
                  v_min: float = -44.0, v_max: float = 44.0,
-                 t_min: float = -17.0, t_max: float = 17.0):
+                 t_min: float = -17.0, t_max: float = 17.0,
+                 sign: int = 1):
         self.can_id     = can_id
         self.limit_min  = limit_min
         self.limit_max  = limit_max
@@ -57,6 +58,7 @@ class _Motor:
         self.v_max      = v_max
         self.t_min      = t_min
         self.t_max      = t_max
+        self.sign       = sign   # 1 or -1
         self.state  = MotorState()
         self.bus    = bus
         self._run_mode_cache = -1
@@ -78,9 +80,9 @@ class _Motor:
             return
         if comm_type == COMM_MOTOR_REQUEST:
             data = bytes(msg.data)
-            self.state.angle  = uint_to_float((data[0] << 8) | data[1], P_MIN, P_MAX, 16)
-            self.state.speed  = uint_to_float((data[2] << 8) | data[3], self.v_min, self.v_max, 16)
-            self.state.torque = uint_to_float((data[4] << 8) | data[5], self.t_min, self.t_max, 16)
+            self.state.angle  = uint_to_float((data[0] << 8) | data[1], P_MIN, P_MAX, 16) * self.sign
+            self.state.speed  = uint_to_float((data[2] << 8) | data[3], self.v_min, self.v_max, 16) * self.sign
+            self.state.torque = uint_to_float((data[4] << 8) | data[5], self.t_min, self.t_max, 16) * self.sign
             self.state.temp   = ((data[6] << 8) | data[7]) * 0.1
             self.state.error  = (ext_id >> 16) & 0x3F
             self._state_event.set()
@@ -150,11 +152,11 @@ class _Motor:
         if not self.state.enabled:
             self.enable()
 
-        torque_enc = float_to_uint(torque, self.t_min, self.t_max, 16)
+        torque_enc = float_to_uint(torque * self.sign, self.t_min, self.t_max, 16)
         ext_id = (COMM_MOTION_CTRL << 24) | (torque_enc << 8) | self.can_id
 
-        angle_enc = float_to_uint(angle, P_MIN, P_MAX, 16)
-        speed_enc = float_to_uint(speed, self.v_min, self.v_max, 16)
+        angle_enc = float_to_uint(angle * self.sign, P_MIN, P_MAX, 16)
+        speed_enc = float_to_uint(speed * self.sign, self.v_min, self.v_max, 16)
         kp_enc    = float_to_uint(kp,    KP_MIN, KP_MAX, 16)
         kd_enc    = float_to_uint(kd,    KD_MIN, KD_MAX, 16)
 
@@ -251,9 +253,11 @@ class JointController:
 
     def __init__(
         self,
-        channel: str = CAN_CHANNEL,
-        bustype: str = CAN_BUSTYPE,
-        bitrate: int = CAN_BITRATE,
+        channel:    str = CAN_CHANNEL,
+        bustype:    str = CAN_BUSTYPE,
+        bitrate:    int = CAN_BITRATE,
+        urdf_path:  str | None = None,
+        visualizer=None,
     ):
         self.bus = can.interface.Bus(channel=channel, interface=bustype, bitrate=bitrate)
 
@@ -269,13 +273,27 @@ class JointController:
                 v_max=MOTOR_MODELS[jcfg.motor_model].v_max,
                 t_min=MOTOR_MODELS[jcfg.motor_model].t_min,
                 t_max=MOTOR_MODELS[jcfg.motor_model].t_max,
+                sign=jcfg.sign,
             )
             for name, jcfg in JOINT_CONFIGS.items()
         }
 
+        self._ik_solver  = self._build_ik_solver(urdf_path)
+        self._visualizer = visualizer
+
         self._stop_event = threading.Event()
         self._rx_thread  = threading.Thread(target=self._rx_loop, daemon=True)
         self._rx_thread.start()
+
+    def _build_ik_solver(self, urdf_path: str | None):
+        import os
+        from ik_solver import IKSolver
+        if urdf_path is None:
+            urdf_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "7dof_arm_urdf", "7dof_arm_urdf.urdf",
+            )
+        return IKSolver(urdf_path=urdf_path, active_joints=list(self.motors.keys()))
 
     def _rx_loop(self):
         while not self._stop_event.is_set():
@@ -423,6 +441,7 @@ class JointController:
             # 절대 시각 기준으로 sleep → 드리프트 누적 방지
             t_next = time.perf_counter()
             for step in range(max_len):
+                step_angles: dict[str, float] = {}
                 for name, waypoints in trajs.items():
                     pos, vel = waypoints[step]
                     self.motors[name].control(
@@ -431,6 +450,9 @@ class JointController:
                         kp     = _get(kp, name),
                         kd     = _get(kd, name),
                     )
+                    step_angles[name] = pos
+                if self._visualizer is not None:
+                    self._visualizer.display(step_angles)
                 t_next += dt
                 remaining = t_next - time.perf_counter()
                 if remaining > 0:
@@ -441,7 +463,7 @@ class JointController:
         else:
             threading.Thread(target=_run, daemon=True).start()
 
-    def move_joint_traj(
+    def move_joint(
         self,
         joint_name: str,
         angle:    float,
@@ -461,6 +483,37 @@ class JointController:
             kp      = {joint_name: kp} if kp is not None else None,
             kd      = {joint_name: kd} if kd is not None else None,
             wait    = wait,
+        )
+
+    def move_pose(
+        self,
+        position:    list[float],
+        orientation: list[float] | None = None,
+        max_vel:     float | dict[str, float] = 1.0,
+        max_acc:     float | dict[str, float] = 2.0,
+        dt:          float = 0.01,
+        kp:          float | dict[str, float] | None = None,
+        kd:          float | dict[str, float] | None = None,
+        wait:        bool = True,
+    ):
+        """
+        목표 위치/자세로 역기구학(IK) 궤적 이동.
+
+        Args:
+            position:    [x, y, z] 목표 위치 [mm]
+            orientation: [roll, pitch, yaw] 목표 자세 [rad] (ZYX 순서) —
+                         None 이면 위치만 제어 (자세는 IK 가 자유롭게 선택)
+            max_vel:     최대 속도 [rad/s] — 단일 값 또는 조인트별 dict
+            max_acc:     최대 가속도 [rad/s²] — 단일 값 또는 조인트별 dict
+            dt:          제어 주기 [s]
+            kp/kd:       게인 (None 이면 config 값 사용)
+            wait:        True 이면 이동 완료 후 반환
+        """
+        angles = self._ik_solver.ik(position, orientation)
+        self.move_joints_traj(
+            angles=angles,
+            max_vel=max_vel, max_acc=max_acc,
+            dt=dt, kp=kp, kd=kd, wait=wait,
         )
 
     # ── 상태 조회 ──────────────────────────────────────────────────────────────
@@ -496,11 +549,14 @@ class JointController:
 # ── 사용 예시 ──────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    # import can as _can
-    # from dummy_bus import DummyBus
-    # _can.interface.Bus = lambda **kwargs: DummyBus()
 
-    jc = JointController()
+    import can as _can
+    from dummy_bus import DummyBus
+    _can.interface.Bus = lambda **kwargs: DummyBus()
+
+    from robot_visualizer import RobotVisualizer
+    vis = RobotVisualizer()
+    jc = JointController(visualizer=vis)
 
     try:
         jc.enable_all()
