@@ -551,35 +551,35 @@ class JointController:
     def _action_1_body(self):
         print("[1] 원점으로 가감속 이동")
         self.move_joints_traj(
-            angles={f'joint{i}': 0.0 for i in range(1, 5)},
+            angles={f'joint{i}': 0.0 for i in range(1, 6)},
             max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
         )
         self.print_states()
 
         print("[2] 목표 위치로 가감속 이동")
         self.move_joints_traj(
-            angles={'joint1': 0.3, 'joint2': 0.4, 'joint3': 0.5, 'joint4': -0.2},
+            angles={'joint1': 0.3, 'joint2': -0.4, 'joint3': 0.5, 'joint4': -0.2, 'joint5': -0.0},
             max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
         )
         self.print_states()
 
         print("[3] 반대 방향으로 가감속 이동")
         self.move_joints_traj(
-            angles={'joint1': -0.7, 'joint2': 0.2, 'joint3': -0.5, 'joint4': -0.6},
+            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': -0.5, 'joint4': -0.6, 'joint5': -0.0},
             max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
         )
         self.print_states()
 
         print("[4] 또 반대 방향으로 가감속 이동")
         self.move_joints_traj(
-            angles={'joint1': -0.7, 'joint2': 0.2, 'joint3': 0.5, 'joint4': -0.2},
+            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': 0.5, 'joint4': -0.2, 'joint5': -0.0},
             max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
         )
         self.print_states()
 
         print("[5] 원점 복귀")
         self.move_joints_traj(
-            angles={f'joint{i}': 0.0 for i in range(1, 5)},
+            angles={f'joint{i}': 0.0 for i in range(1, 6)},
             max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
         )
         self.print_states()
@@ -597,9 +597,9 @@ class JointController:
 
 if __name__ == '__main__':
 
-    import can as _can
-    from dummy_bus import DummyBus
-    _can.interface.Bus = lambda **kwargs: DummyBus()
+    # import can as _can
+    # from dummy_bus import DummyBus
+    # _can.interface.Bus = lambda **kwargs: DummyBus()
 
     from robot_visualizer import RobotVisualizer
     vis = RobotVisualizer()

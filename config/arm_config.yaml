@@ -10,6 +10,7 @@ joints:
   joint2: { can_id: 2, motor_model: RS06, limit_min: -10.0, limit_max:  90.0, kp: 20.0, kd: 0.5, sign:  -1 }
   joint3: { can_id: 3, motor_model: RS02, limit_min: -90.0, limit_max:  90.0, kp: 10.0, kd: 0.5, sign:  1 }
   joint4: { can_id: 4, motor_model: RS02, limit_min: -50.0, limit_max:  90.0, kp: 10.0, kd: 0.5, sign:  1 }
+  joint5: { can_id: 5, motor_model: RS00, limit_min: -90.0, limit_max:  90.0, kp: 10.0, kd: 0.5, sign:  1 }
 
 
 # ── MIT 제어 게인 기본값 (조인트별 kp/kd 미지정 시 폴백) ──────────────────────
@@ -25,6 +26,9 @@ motor_limits:
 
 # ── 모터 모델별 스펙 ───────────────────────────────────────────────────────────
 motor_models:
+  RS00:
+    velocity: { min: -44.0, max:  44.0 }  # [rad/s] 임시값 — 실제 스펙 확인 후 수정
+    torque:   { min:  -2.0, max:   2.0 }  # [Nm]    임시값 — 실제 스펙 확인 후 수정
   RS02:
     velocity: { min: -44.0, max:  44.0 }  # [rad/s]
     torque:   { min: -17.0, max:  17.0 }  # [Nm]
