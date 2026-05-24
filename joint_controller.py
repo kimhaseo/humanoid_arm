@@ -291,7 +291,7 @@ class JointController:
         if urdf_path is None:
             urdf_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "7dof_arm_urdf", "7dof_arm_urdf.urdf",
+                "right_arm_urdf", "right_arm_urdf.urdf",
             )
         return IKSolver(urdf_path=urdf_path, active_joints=list(self.motors.keys()))
 
@@ -537,6 +537,53 @@ class JointController:
         for name, s in states.items():
             print(f"{name:<10} {s['angle']:>12.4f} {s['speed']:>14.4f} {s['torque']:>12.4f} {s['temp']:>10.1f} {s['error']:>7}")
 
+    # ── 액션 ───────────────────────────────────────────────────────────────────
+
+    def action_1(self):
+        """액션 1: 원점 → 목표 → 반대 → 반대 → 원점 복귀."""
+        try:
+            self._action_1_body()
+        except ValueError as e:
+            print(f"[action_1] 리밋 초과로 실행 취소: {e}")
+        except Exception as e:
+            print(f"[action_1] 오류: {e}")
+
+    def _action_1_body(self):
+        print("[1] 원점으로 가감속 이동")
+        self.move_joints_traj(
+            angles={f'joint{i}': 0.0 for i in range(1, 5)},
+            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+        )
+        self.print_states()
+
+        print("[2] 목표 위치로 가감속 이동")
+        self.move_joints_traj(
+            angles={'joint1': 0.3, 'joint2': 0.4, 'joint3': 0.5, 'joint4': -0.2},
+            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+        )
+        self.print_states()
+
+        print("[3] 반대 방향으로 가감속 이동")
+        self.move_joints_traj(
+            angles={'joint1': -0.7, 'joint2': 0.2, 'joint3': -0.5, 'joint4': -0.6},
+            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+        )
+        self.print_states()
+
+        print("[4] 또 반대 방향으로 가감속 이동")
+        self.move_joints_traj(
+            angles={'joint1': -0.7, 'joint2': 0.2, 'joint3': 0.5, 'joint4': -0.2},
+            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+        )
+        self.print_states()
+
+        print("[5] 원점 복귀")
+        self.move_joints_traj(
+            angles={f'joint{i}': 0.0 for i in range(1, 5)},
+            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+        )
+        self.print_states()
+
     # ── 종료 ───────────────────────────────────────────────────────────────────
 
     def shutdown(self):
@@ -561,34 +608,9 @@ if __name__ == '__main__':
     try:
         jc.enable_all()
         time.sleep(0.5)
-
-        print("[1] 원점으로 가감속 이동")
-        jc.move_joints_traj(
-            angles={f'joint{i}': 0.0 for i in range(1, 5)},
-            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
-        )
-        jc.print_states()
-
-        print("[2] 목표 위치로 가감속 이동")
-        jc.move_joints_traj(
-            angles={'joint1': 0.5, 'joint2': 0.5, 'joint3': 0.5, 'joint4': 0.5},
-            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
-        )
-        jc.print_states()
-
-        print("[3] 반대 방향으로 가감속 이동")
-        jc.move_joints_traj(
-            angles={'joint1': -1.0, 'joint2': 0.1, 'joint3': -0.5, 'joint4': -0.5},
-            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
-        )
-
-        print("[4] 원점 복귀")
-        jc.move_joints_traj(
-            angles={f'joint{i}': 0.0 for i in range(1, 5)},
-            max_vel=0.5, max_acc=0.5, kp=50.0, kd=1.0,
-        )
-        jc.print_states()
-
+        for i in range(10):
+            jc.action_1()
+        time.sleep(10)
     except KeyboardInterrupt:
         print('\n사용자 중단')
     finally:

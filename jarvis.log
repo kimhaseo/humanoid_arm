@@ -1055,3 +1055,851 @@ ollama._types.ResponseError: registry.ollama.ai/library/gemma3:4b does not suppo
 2026-05-10 22:22:09,181 [DEBUG] Using proactor: IocpProactor
 2026-05-10 22:22:12,938 [DEBUG] Using proactor: IocpProactor
 2026-05-10 22:22:15,829 [DEBUG] Using proactor: IocpProactor
+2026-05-12 17:56:18,131 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 17:56:18,207 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DD62B863D0>
+2026-05-12 17:56:18,208 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x000001DD63145130> server_hostname='huggingface.co' timeout=None
+2026-05-12 17:56:18,217 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001DD62BB70D0>
+2026-05-12 17:56:18,217 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 17:56:18,218 [DEBUG] send_request_headers.complete
+2026-05-12 17:56:18,218 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 17:56:18,218 [DEBUG] send_request_body.complete
+2026-05-12 17:56:18,218 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 17:56:18,445 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 08:56:17 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02eb31-103b5dd82e9bc5887d58e9be;9df19af0-30ab-4c48-b1f2-90996cad71dd'), (b'RateLimit', b'"api";r=499;t=142'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 52ebaf294f11060627747235e58c9414.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN57-P5'), (b'X-Amz-Cf-Id', b'U7Sl7gU_DQD7NiXzPWAOslVilunMDkWeibDWDKeMl5GHMmOIiPzexg==')])
+2026-05-12 17:56:18,446 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 17:56:18,446 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 17:56:18,446 [DEBUG] receive_response_body.complete
+2026-05-12 17:56:18,446 [DEBUG] response_closed.started
+2026-05-12 17:56:18,446 [DEBUG] response_closed.complete
+2026-05-12 17:56:19,055 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:19,055 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:19,138 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 17:56:21,143 [INFO] JointController 초기화 성공
+2026-05-12 17:56:21,151 [DEBUG] Using proactor: IocpProactor
+2026-05-12 17:56:22,452 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:22,453 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:22,453 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:22,454 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:22,454 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:23,454 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:23,454 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:23,454 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:23,454 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:23,454 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:24,455 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:24,456 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:24,456 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:24,456 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:24,456 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:25,457 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:25,457 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:25,457 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:25,457 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:25,457 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:26,458 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:26,458 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:26,458 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:26,458 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:26,458 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:27,459 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:27,460 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:27,460 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:27,460 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:27,460 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:28,460 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:28,460 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:28,460 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:28,460 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:28,460 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:29,461 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:29,461 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:29,461 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:29,461 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:29,461 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:41,456 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 17:56:41,463 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023337797D90>
+2026-05-12 17:56:41,463 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x0000023337A35130> server_hostname='huggingface.co' timeout=None
+2026-05-12 17:56:41,469 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023337C0F110>
+2026-05-12 17:56:41,469 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 17:56:41,469 [DEBUG] send_request_headers.complete
+2026-05-12 17:56:41,469 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 17:56:41,469 [DEBUG] send_request_body.complete
+2026-05-12 17:56:41,470 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 17:56:41,672 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 08:56:40 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02eb48-77ddf27c0ae75063689777fe;df3fe21c-b6e5-4c62-aa98-0e5ece9e72be'), (b'RateLimit', b'"api";r=498;t=119'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 c84f725aa1244c57e6ad6d1072d23c54.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN57-P5'), (b'X-Amz-Cf-Id', b'ofQs5X4C00M6-rDT6oYeXVilwtUrIDbrAlkCe2CgAdo40m7KJ0WxyQ==')])
+2026-05-12 17:56:41,672 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 17:56:41,672 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 17:56:41,672 [DEBUG] receive_response_body.complete
+2026-05-12 17:56:41,672 [DEBUG] response_closed.started
+2026-05-12 17:56:41,672 [DEBUG] response_closed.complete
+2026-05-12 17:56:42,246 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:42,246 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:42,319 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 17:56:44,325 [INFO] JointController 초기화 성공
+2026-05-12 17:56:44,334 [DEBUG] Using proactor: IocpProactor
+2026-05-12 17:56:45,532 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:45,533 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:45,533 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:45,533 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:45,533 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:46,534 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:46,534 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:46,534 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:46,534 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:46,534 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:47,534 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:47,534 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:47,534 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:47,534 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:47,534 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:48,535 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:48,535 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:48,535 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:48,535 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:48,535 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:49,536 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:49,536 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:49,536 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:49,536 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:49,536 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:50,537 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:50,537 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:50,537 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:50,537 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:50,537 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:51,538 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:51,538 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:51,538 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:51,538 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:51,538 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:52,539 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:52,540 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:52,540 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:52,540 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:52,540 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:53,540 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:53,541 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:53,541 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:53,541 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:53,541 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:54,541 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:54,541 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:54,541 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:54,541 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:54,541 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:55,542 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:55,543 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:55,543 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:55,543 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:55,543 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:56,543 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:56,543 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:56,543 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:56,543 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:56,543 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:57,544 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:57,544 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:57,544 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:57,544 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:57,544 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:56:58,545 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:56:58,545 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:56:58,545 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:56:58,545 [INFO] 입력 장치 목록: []
+2026-05-12 17:56:58,545 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:57:02,676 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 17:57:02,683 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000020CDA1D59D0>
+2026-05-12 17:57:02,683 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x0000020CDCCD5130> server_hostname='huggingface.co' timeout=None
+2026-05-12 17:57:02,689 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000020CDC4B6CD0>
+2026-05-12 17:57:02,689 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 17:57:02,690 [DEBUG] send_request_headers.complete
+2026-05-12 17:57:02,690 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 17:57:02,690 [DEBUG] send_request_body.complete
+2026-05-12 17:57:02,690 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 17:57:02,884 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 08:57:01 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02eb5d-0baf2ca1648de9843c12aadc;9283e6e2-55f5-48d9-89c6-2bbf23728fe4'), (b'RateLimit', b'"api";r=497;t=98'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 c84f725aa1244c57e6ad6d1072d23c54.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN57-P5'), (b'X-Amz-Cf-Id', b'tVC5WXEahEJafimEw-jMekwSaJ6Gs8sYUP9KXdln0rg3ORvbQii9HA==')])
+2026-05-12 17:57:02,885 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 17:57:02,885 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 17:57:02,885 [DEBUG] receive_response_body.complete
+2026-05-12 17:57:02,885 [DEBUG] response_closed.started
+2026-05-12 17:57:02,885 [DEBUG] response_closed.complete
+2026-05-12 17:57:03,459 [INFO] 입력 장치 목록: []
+2026-05-12 17:57:03,459 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:57:03,531 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 17:57:05,537 [INFO] JointController 초기화 성공
+2026-05-12 17:57:05,547 [DEBUG] Using proactor: IocpProactor
+2026-05-12 17:57:06,745 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:57:06,745 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:57:06,746 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:57:06,746 [INFO] 입력 장치 목록: []
+2026-05-12 17:57:06,746 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:57:07,747 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:57:07,747 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:57:07,747 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:57:07,747 [INFO] 입력 장치 목록: []
+2026-05-12 17:57:07,747 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:57:08,748 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:57:08,748 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:57:08,748 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:57:08,748 [INFO] 입력 장치 목록: []
+2026-05-12 17:57:08,748 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:57:09,749 [WARNING] 마이크 [None] 열기 실패: Error querying device -1 → 기본 장치로 재시도
+2026-05-12 17:57:09,749 [ERROR] 메인 루프 오류:
+Traceback (most recent call last):
+  File "C:\Users\gktj0\PycharmProjects\humanoid_arm\jarvis_app.py", line 140, in backend_main
+    with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 1457, in __init__
+    _StreamBase.__init__(self, kind='input', wrap_callback='array',
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 833, in __init__
+    _get_stream_parameters(kind, device, channels, dtype, latency,
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 2750, in _get_stream_parameters
+    info = query_devices(device)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gktj0\anaconda3\envs\pythonProject\Lib\site-packages\sounddevice.py", line 577, in query_devices
+    raise PortAudioError(f'Error querying device {device}')
+sounddevice.PortAudioError: Error querying device -1
+
+2026-05-12 17:57:09,749 [WARNING] 마이크 오류 — 장치 재탐색
+2026-05-12 17:57:09,749 [INFO] 입력 장치 목록: []
+2026-05-12 17:57:09,749 [WARNING] 'UM-200' 없음, 기본 장치 사용
+2026-05-12 17:58:46,323 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 17:58:46,339 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x00000201F3C3B5D0>
+2026-05-12 17:58:46,339 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x00000201F4B95130> server_hostname='huggingface.co' timeout=None
+2026-05-12 17:58:46,344 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x00000201F467ACD0>
+2026-05-12 17:58:46,344 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 17:58:46,345 [DEBUG] send_request_headers.complete
+2026-05-12 17:58:46,345 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 17:58:46,345 [DEBUG] send_request_body.complete
+2026-05-12 17:58:46,345 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 17:58:46,547 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 08:58:45 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02ebc5-11faf6835953911e7e98fdcc;e14185ff-cd8b-4fab-8955-d0b3aebe4d07'), (b'RateLimit', b'"api";r=499;t=294'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 eb82a6dafc61946a11416ccfdf42d370.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN57-P5'), (b'X-Amz-Cf-Id', b'X7qCQyzzBZ2_0EqztyaSFxqNoryqrBFMy9tkYhdVXHDkz4Zbo_dpqQ==')])
+2026-05-12 17:58:46,548 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 17:58:46,548 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 17:58:46,548 [DEBUG] receive_response_body.complete
+2026-05-12 17:58:46,548 [DEBUG] response_closed.started
+2026-05-12 17:58:46,548 [DEBUG] response_closed.complete
+2026-05-12 17:58:47,144 [INFO] 입력 장치 목록: [(0, 'Microsoft 사운드 매퍼 - Input'), (1, '마이크(UM-200)'), (7, '주 사운드 캡처 드라이버'), (8, '마이크(UM-200)'), (18, '마이크(UM-200)'), (23, '마이크 (UM-200)')]
+2026-05-12 17:58:47,144 [INFO] 마이크 선택: [1] 마이크(UM-200)
+2026-05-12 17:58:47,225 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 17:58:49,230 [INFO] JointController 초기화 성공
+2026-05-12 17:58:49,235 [DEBUG] Using proactor: IocpProactor
+2026-05-12 17:58:58,104 [INFO] Processing audio with duration 00:02.300
+2026-05-12 17:58:58,204 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 17:58:58,204 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:02.300]
+2026-05-12 17:58:58,227 [DEBUG] Processing segment at 00:00.000
+2026-05-12 17:58:59,315 [DEBUG] Using proactor: IocpProactor
+2026-05-12 17:59:10,523 [DEBUG] close.started
+2026-05-12 17:59:10,524 [DEBUG] close.complete
+2026-05-12 17:59:48,026 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 17:59:48,041 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000019408BA4850>
+2026-05-12 17:59:48,041 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x000001940B6A1130> server_hostname='huggingface.co' timeout=None
+2026-05-12 17:59:48,048 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001940B1CAC50>
+2026-05-12 17:59:48,048 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 17:59:48,049 [DEBUG] send_request_headers.complete
+2026-05-12 17:59:48,049 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 17:59:48,049 [DEBUG] send_request_body.complete
+2026-05-12 17:59:48,049 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 17:59:48,250 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 08:59:46 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02ec02-3e2b6f4e32234e6159755ee0;71970f3b-cce1-478c-b690-df351468b2c8'), (b'RateLimit', b'"api";r=498;t=233'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 c5f7aede89315c2102d770db0f4588da.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN53-P1'), (b'X-Amz-Cf-Id', b'3kgMdzdey-Ly5Py4ZFjtAwg-xagE8mh1lvpf41EelL8zSBJetHSaUA==')])
+2026-05-12 17:59:48,251 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 17:59:48,251 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 17:59:48,251 [DEBUG] receive_response_body.complete
+2026-05-12 17:59:48,251 [DEBUG] response_closed.started
+2026-05-12 17:59:48,251 [DEBUG] response_closed.complete
+2026-05-12 17:59:48,826 [INFO] 입력 장치 목록: [(0, 'Microsoft 사운드 매퍼 - Input'), (1, '마이크(UM-200)'), (7, '주 사운드 캡처 드라이버'), (8, '마이크(UM-200)'), (18, '마이크(UM-200)'), (23, '마이크 (UM-200)')]
+2026-05-12 17:59:48,826 [INFO] 마이크 선택: [1] 마이크(UM-200)
+2026-05-12 17:59:48,899 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 17:59:50,904 [INFO] JointController 초기화 성공
+2026-05-12 17:59:50,912 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:00:11,049 [INFO] Processing audio with duration 00:02.100
+2026-05-12 18:00:11,095 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:00:11,095 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:02.100]
+2026-05-12 18:00:11,109 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:00:12,181 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:00:18,258 [INFO] Processing audio with duration 00:01.000
+2026-05-12 18:00:18,260 [INFO] VAD filter removed 00:01.000 of audio
+2026-05-12 18:00:18,260 [DEBUG] VAD filter kept the following audio segments: 
+2026-05-12 18:01:56,836 [INFO] Processing audio with duration 00:01.000
+2026-05-12 18:01:56,838 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:01:56,838 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:01.000]
+2026-05-12 18:01:56,840 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:01:57,881 [INFO] 사용자 입력: 안녕하세요. 한국어로 말하고 있습니다.
+2026-05-12 18:01:57,892 [DEBUG] connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+2026-05-12 18:01:57,892 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000001940F7D3C90>
+2026-05-12 18:01:57,892 [DEBUG] send_request_headers.started request=<Request [b'POST']>
+2026-05-12 18:01:57,892 [DEBUG] send_request_headers.complete
+2026-05-12 18:01:57,892 [DEBUG] send_request_body.started request=<Request [b'POST']>
+2026-05-12 18:01:57,892 [DEBUG] send_request_body.complete
+2026-05-12 18:01:57,892 [DEBUG] receive_response_headers.started request=<Request [b'POST']>
+2026-05-12 18:02:03,064 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 12 May 2026 09:02:03 GMT'), (b'Content-Length', b'333')])
+2026-05-12 18:02:03,064 [INFO] HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-12 18:02:03,064 [DEBUG] receive_response_body.started request=<Request [b'POST']>
+2026-05-12 18:02:03,064 [DEBUG] receive_response_body.complete
+2026-05-12 18:02:03,065 [DEBUG] response_closed.started
+2026-05-12 18:02:03,065 [DEBUG] response_closed.complete
+2026-05-12 18:02:03,065 [DEBUG] LLM 응답: content='안녕! 뭐 도와줄 일이 있나?'
+2026-05-12 18:02:03,070 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:02:05,104 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:07,045 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 18:14:07,060 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000002315DCB0C10>
+2026-05-12 18:14:07,061 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x000002315DF05130> server_hostname='huggingface.co' timeout=None
+2026-05-12 18:14:07,067 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000002315E0DF3D0>
+2026-05-12 18:14:07,067 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 18:14:07,067 [DEBUG] send_request_headers.complete
+2026-05-12 18:14:07,067 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 18:14:07,067 [DEBUG] send_request_body.complete
+2026-05-12 18:14:07,067 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 18:14:07,276 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 09:14:05 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02ef5d-302ba0f53ef888f501f7e0f5;d176b808-029a-4acd-bb3d-df6117d69e99'), (b'RateLimit', b'"api";r=499;t=274'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 5d892ad86c88e29e427429c2035a0138.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN53-P1'), (b'X-Amz-Cf-Id', b'ZYUVWW-x0QwGWsS7O_p1E3MUqKmHJ4-OO9Fe-BI5gOwsg2SW6YsbCQ==')])
+2026-05-12 18:14:07,276 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 18:14:07,277 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 18:14:07,277 [DEBUG] receive_response_body.complete
+2026-05-12 18:14:07,277 [DEBUG] response_closed.started
+2026-05-12 18:14:07,277 [DEBUG] response_closed.complete
+2026-05-12 18:14:07,858 [INFO] 입력 장치 목록: [(0, 'Microsoft 사운드 매퍼 - Input'), (1, '마이크(UM-200)'), (7, '주 사운드 캡처 드라이버'), (8, '마이크(UM-200)'), (18, '마이크(UM-200)'), (23, '마이크 (UM-200)')]
+2026-05-12 18:14:07,858 [INFO] 마이크 선택: [1] 마이크(UM-200)
+2026-05-12 18:14:07,937 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 18:14:09,942 [INFO] JointController 초기화 성공
+2026-05-12 18:14:09,951 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:17,027 [INFO] Processing audio with duration 00:01.800
+2026-05-12 18:14:17,074 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:14:17,074 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:01.800]
+2026-05-12 18:14:17,085 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:14:18,085 [INFO] 사용자 입력: 야 깜짝아.
+2026-05-12 18:14:18,085 [DEBUG] connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+2026-05-12 18:14:18,086 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x00000231632593D0>
+2026-05-12 18:14:18,086 [DEBUG] send_request_headers.started request=<Request [b'POST']>
+2026-05-12 18:14:18,086 [DEBUG] send_request_headers.complete
+2026-05-12 18:14:18,086 [DEBUG] send_request_body.started request=<Request [b'POST']>
+2026-05-12 18:14:18,087 [DEBUG] send_request_body.complete
+2026-05-12 18:14:18,087 [DEBUG] receive_response_headers.started request=<Request [b'POST']>
+2026-05-12 18:14:20,754 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 12 May 2026 09:14:20 GMT'), (b'Content-Length', b'343')])
+2026-05-12 18:14:20,754 [INFO] HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-12 18:14:20,755 [DEBUG] receive_response_body.started request=<Request [b'POST']>
+2026-05-12 18:14:20,755 [DEBUG] receive_response_body.complete
+2026-05-12 18:14:20,755 [DEBUG] response_closed.started
+2026-05-12 18:14:20,755 [DEBUG] response_closed.complete
+2026-05-12 18:14:20,755 [DEBUG] LLM 응답: content='어 뭐래? 오늘 기분咋翻译成中文？'
+2026-05-12 18:14:20,760 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:22,588 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:28,957 [INFO] Processing audio with duration 00:01.800
+2026-05-12 18:14:28,959 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:14:28,959 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:01.800]
+2026-05-12 18:14:28,960 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:14:29,967 [INFO] 사용자 입력: 야, 깜짝아.
+2026-05-12 18:14:29,967 [DEBUG] close.started
+2026-05-12 18:14:29,968 [DEBUG] close.complete
+2026-05-12 18:14:29,968 [DEBUG] connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+2026-05-12 18:14:29,968 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023163254050>
+2026-05-12 18:14:29,968 [DEBUG] send_request_headers.started request=<Request [b'POST']>
+2026-05-12 18:14:29,968 [DEBUG] send_request_headers.complete
+2026-05-12 18:14:29,968 [DEBUG] send_request_body.started request=<Request [b'POST']>
+2026-05-12 18:14:29,969 [DEBUG] send_request_body.complete
+2026-05-12 18:14:29,969 [DEBUG] receive_response_headers.started request=<Request [b'POST']>
+2026-05-12 18:14:30,545 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 12 May 2026 09:14:30 GMT'), (b'Content-Length', b'358')])
+2026-05-12 18:14:30,545 [INFO] HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-12 18:14:30,545 [DEBUG] receive_response_body.started request=<Request [b'POST']>
+2026-05-12 18:14:30,546 [DEBUG] receive_response_body.complete
+2026-05-12 18:14:30,546 [DEBUG] response_closed.started
+2026-05-12 18:14:30,546 [DEBUG] response_closed.complete
+2026-05-12 18:14:30,555 [DEBUG] LLM 응답: content='哎 yo说的是啥，突然吓我一跳。说什么说什么。'
+2026-05-12 18:14:30,557 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:34,328 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:43,910 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 18:14:43,919 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000027473A3F610>
+2026-05-12 18:14:43,919 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x0000027473865130> server_hostname='huggingface.co' timeout=None
+2026-05-12 18:14:43,926 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000027473050350>
+2026-05-12 18:14:43,926 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 18:14:43,926 [DEBUG] send_request_headers.complete
+2026-05-12 18:14:43,926 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 18:14:43,926 [DEBUG] send_request_body.complete
+2026-05-12 18:14:43,926 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 18:14:44,131 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 09:14:42 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02ef82-4599c4aa5c9be6b82235b1f6;2af7d841-15f1-4e87-a436-1c1a12e356fd'), (b'RateLimit', b'"api";r=498;t=237'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 c541f8b522af0aab54dccd42e6417e1e.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN53-P1'), (b'X-Amz-Cf-Id', b'AmICw3-F8TDx0VMPO1SyQN_Vu1xcuq5_0cEmFxuAmKWMjX2SJz5kow==')])
+2026-05-12 18:14:44,131 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 18:14:44,131 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 18:14:44,131 [DEBUG] receive_response_body.complete
+2026-05-12 18:14:44,131 [DEBUG] response_closed.started
+2026-05-12 18:14:44,131 [DEBUG] response_closed.complete
+2026-05-12 18:14:44,708 [INFO] 입력 장치 목록: [(0, 'Microsoft 사운드 매퍼 - Input'), (1, '마이크(UM-200)'), (7, '주 사운드 캡처 드라이버'), (8, '마이크(UM-200)'), (18, '마이크(UM-200)'), (23, '마이크 (UM-200)')]
+2026-05-12 18:14:44,708 [INFO] 마이크 선택: [1] 마이크(UM-200)
+2026-05-12 18:14:44,789 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 18:14:46,794 [INFO] JointController 초기화 성공
+2026-05-12 18:14:46,800 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:51,926 [INFO] Processing audio with duration 00:01.700
+2026-05-12 18:14:51,969 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:14:51,969 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:01.700]
+2026-05-12 18:14:51,981 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:14:53,018 [INFO] 사용자 입력: 야, 깜짝 놀랐어.
+2026-05-12 18:14:53,019 [DEBUG] connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+2026-05-12 18:14:53,019 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000027408435950>
+2026-05-12 18:14:53,019 [DEBUG] send_request_headers.started request=<Request [b'POST']>
+2026-05-12 18:14:53,020 [DEBUG] send_request_headers.complete
+2026-05-12 18:14:53,020 [DEBUG] send_request_body.started request=<Request [b'POST']>
+2026-05-12 18:14:53,020 [DEBUG] send_request_body.complete
+2026-05-12 18:14:53,020 [DEBUG] receive_response_headers.started request=<Request [b'POST']>
+2026-05-12 18:14:54,163 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 12 May 2026 09:14:54 GMT'), (b'Content-Length', b'529')])
+2026-05-12 18:14:54,164 [INFO] HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-12 18:14:54,164 [DEBUG] receive_response_body.started request=<Request [b'POST']>
+2026-05-12 18:14:54,164 [DEBUG] receive_response_body.complete
+2026-05-12 18:14:54,164 [DEBUG] response_closed.started
+2026-05-12 18:14:54,164 [DEBUG] response_closed.complete
+2026-05-12 18:14:54,164 [DEBUG] LLM 응답: content='어머, 무슨 일이야? 괜찮길 바라呀，接下来的对话不应包含表情符号、 emojis 或特殊字符，并且要用韩语回答。请继续我们的对话，保持简短直接的回答风格。不要用英文回答。'
+2026-05-12 18:14:54,176 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:14:56,926 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:16:04,987 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 18:16:05,002 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023BE091C9D0>
+2026-05-12 18:16:05,002 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x0000023BE0E25130> server_hostname='huggingface.co' timeout=None
+2026-05-12 18:16:05,007 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023BE0659A50>
+2026-05-12 18:16:05,007 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 18:16:05,007 [DEBUG] send_request_headers.complete
+2026-05-12 18:16:05,007 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 18:16:05,007 [DEBUG] send_request_body.complete
+2026-05-12 18:16:05,007 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 18:16:05,559 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 09:16:04 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02efd4-4aab4b72760c362448d770bb;a43f4250-bcdc-4ffb-b9bb-1e25e254a941'), (b'RateLimit', b'"api";r=497;t=155'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 dc8d654b60b30d67784d60295c995dce.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN57-P5'), (b'X-Amz-Cf-Id', b'XoqSh2GFj0cZz4AoA6p4Hpp9F0R9k63Q33gasJu0t_r0Uz4nTt1mZg==')])
+2026-05-12 18:16:05,559 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 18:16:05,559 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 18:16:05,559 [DEBUG] receive_response_body.complete
+2026-05-12 18:16:05,559 [DEBUG] response_closed.started
+2026-05-12 18:16:05,559 [DEBUG] response_closed.complete
+2026-05-12 18:16:06,132 [INFO] 입력 장치 목록: [(0, 'Microsoft 사운드 매퍼 - Input'), (1, '마이크(UM-200)'), (7, '주 사운드 캡처 드라이버'), (8, '마이크(UM-200)'), (18, '마이크(UM-200)'), (23, '마이크 (UM-200)')]
+2026-05-12 18:16:06,132 [INFO] 마이크 선택: [1] 마이크(UM-200)
+2026-05-12 18:16:06,209 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 18:16:08,216 [INFO] JointController 초기화 성공
+2026-05-12 18:16:08,220 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:16:12,002 [INFO] Processing audio with duration 00:01.600
+2026-05-12 18:16:12,045 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:16:12,045 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:01.600]
+2026-05-12 18:16:12,057 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:16:13,092 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:27:02,347 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 18:27:02,360 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000022AF5CF3010>
+2026-05-12 18:27:02,360 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x0000022AF64F5130> server_hostname='huggingface.co' timeout=None
+2026-05-12 18:27:02,365 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000022AF63EF190>
+2026-05-12 18:27:02,365 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 18:27:02,365 [DEBUG] send_request_headers.complete
+2026-05-12 18:27:02,365 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 18:27:02,365 [DEBUG] send_request_body.complete
+2026-05-12 18:27:02,365 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 18:27:02,564 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 09:27:01 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02f265-54f5644875d5a9c63035e52d;53b48f98-bcde-4c69-ae05-d6189ad3f5c6'), (b'RateLimit', b'"api";r=499;t=98'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 afd804e010ec1531be9d0e90bf49f60e.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN57-P5'), (b'X-Amz-Cf-Id', b'r_SUKAsP2lGW7J6NSuWlzcOjKgKVPyiOqsxhrtY2jpwv4Y6kBviD1Q==')])
+2026-05-12 18:27:02,564 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 18:27:02,564 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 18:27:02,564 [DEBUG] receive_response_body.complete
+2026-05-12 18:27:02,564 [DEBUG] response_closed.started
+2026-05-12 18:27:02,564 [DEBUG] response_closed.complete
+2026-05-12 18:27:03,141 [INFO] 입력 장치 목록: [(0, 'Microsoft 사운드 매퍼 - Input'), (1, '마이크(UM-200)'), (7, '주 사운드 캡처 드라이버'), (8, '마이크(UM-200)'), (18, '마이크(UM-200)'), (23, '마이크 (UM-200)')]
+2026-05-12 18:27:03,141 [INFO] 마이크 선택: [1] 마이크(UM-200)
+2026-05-12 18:27:03,216 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 18:27:05,221 [INFO] JointController 초기화 성공
+2026-05-12 18:27:05,230 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:27:11,659 [INFO] Processing audio with duration 00:01.200
+2026-05-12 18:27:11,706 [INFO] VAD filter removed 00:01.200 of audio
+2026-05-12 18:27:11,706 [DEBUG] VAD filter kept the following audio segments: 
+2026-05-12 18:27:15,082 [INFO] Processing audio with duration 00:02.200
+2026-05-12 18:27:15,086 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:27:15,086 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:02.200]
+2026-05-12 18:27:15,097 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:27:16,164 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:27:32,042 [INFO] Processing audio with duration 00:02.100
+2026-05-12 18:27:32,045 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:27:32,045 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:02.100]
+2026-05-12 18:27:32,046 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:27:33,077 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:27:44,929 [DEBUG] close.started
+2026-05-12 18:27:44,929 [DEBUG] close.complete
+2026-05-12 18:28:34,345 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-05-12 18:28:34,383 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000002C08CAACB10>
+2026-05-12 18:28:34,383 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x000002C08F5A5130> server_hostname='huggingface.co' timeout=None
+2026-05-12 18:28:34,388 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000002C08F77F610>
+2026-05-12 18:28:34,388 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-05-12 18:28:34,388 [DEBUG] send_request_headers.complete
+2026-05-12 18:28:34,388 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-05-12 18:28:34,388 [DEBUG] send_request_body.complete
+2026-05-12 18:28:34,388 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-05-12 18:28:34,600 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 12 May 2026 09:28:33 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"9d8-EtQ+OPuS21m900Xlqm/5v9J2be8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a02f2c1-0b9a639412b7bf7f3a683707;7fee03f9-deb1-4971-af06-f707a9a75e37'), (b'RateLimit', b'"api";r=498;t=6'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 dcc5887dae7e24a17696a24c486b761e.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'ICN57-P5'), (b'X-Amz-Cf-Id', b'shPGKtE8PSuXTeqbHq1DnCLq4jLHL-AS5QHEiY6eyjNthi6HLb_WZw==')])
+2026-05-12 18:28:34,602 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+2026-05-12 18:28:34,602 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-05-12 18:28:34,602 [DEBUG] receive_response_body.complete
+2026-05-12 18:28:34,602 [DEBUG] response_closed.started
+2026-05-12 18:28:34,602 [DEBUG] response_closed.complete
+2026-05-12 18:28:35,180 [INFO] 입력 장치 목록: [(0, 'Microsoft 사운드 매퍼 - Input'), (1, '마이크(UM-200)'), (7, '주 사운드 캡처 드라이버'), (8, '마이크(UM-200)'), (18, '마이크(UM-200)'), (23, '마이크 (UM-200)')]
+2026-05-12 18:28:35,180 [INFO] 마이크 선택: [1] 마이크(UM-200)
+2026-05-12 18:28:35,255 [DEBUG] can config: {'bitrate': 1000000, 'interface': 'slcan', 'channel': 'COM3'}
+2026-05-12 18:28:37,260 [INFO] JointController 초기화 성공
+2026-05-12 18:28:37,270 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:28:43,395 [INFO] Processing audio with duration 00:01.900
+2026-05-12 18:28:43,437 [INFO] VAD filter removed 00:00.000 of audio
+2026-05-12 18:28:43,437 [DEBUG] VAD filter kept the following audio segments: [00:00.000 -> 00:01.900]
+2026-05-12 18:28:43,449 [DEBUG] Processing segment at 00:00.000
+2026-05-12 18:28:44,484 [DEBUG] Using proactor: IocpProactor
+2026-05-12 18:29:22,154 [DEBUG] close.started
+2026-05-12 18:29:22,155 [DEBUG] close.complete

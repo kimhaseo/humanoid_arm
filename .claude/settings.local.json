@@ -11,13 +11,11 @@
       "Bash(python3 -c \"from config import get_config; cfg = get_config\\(\\); print\\({name: \\(j.kp, j.kd\\) for name, j in cfg.joints.items\\(\\)}\\)\")",
       "Bash(ollama pull *)",
       "Bash(.venv/bin/python -c ' *)",
-      "Bash(python ik_solver.py)",
-      "Bash(python3 -c \"from pinocchio.visualize import MeshcatVisualizer; print\\('ok'\\)\")",
-      "Bash(pip install *)",
-      "Bash(python3 -c ' *)",
-      "Bash(pip3 install *)",
-      "Bash(python3 -c \"import sys; print\\(sys.path\\)\")",
-      "Bash(ls /opt/homebrew/lib/python3.14/site-packages/ | grep -i \"can\\\\|pinocchio\")"
+      "Bash(Rename-Item \"base_link-v2.stl\" \"base_link.stl\")",
+      "Bash(Rename-Item \"link_1-v2.stl\" \"link_1.stl\")",
+      "Bash(Rename-Item \"link_2-v2.stl\" \"link_2.stl\")",
+      "Bash(Rename-Item \"link_3-v1.stl\" \"link_3.stl\")",
+      "Bash(Rename-Item \"link_4-v2.stl\" \"link_4.stl\")"
     ]
   }
 }

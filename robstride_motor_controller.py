@@ -565,7 +565,7 @@ if __name__ == '__main__':
 
     CHANNEL = 'COM3'
     BUSTYPE = 'slcan'
-    MOTOR_ID = 0x04
+    MOTOR_ID = 0x03
 
     def on_state_update(state: MotorState):
         print(f'  각도: {state.angle:7.3f} rad | 속도: {state.speed:7.3f} rad/s | '
@@ -589,12 +589,12 @@ if __name__ == '__main__':
         motor.enable()
         time.sleep(0.1)
 
-        # motor.set_zero()
+        motor.set_zero()
 
         # 2. 복합 제어 (각도 이동)
-        print('\n[2] 복합 제어: 각도 1.0 rad, 속도 5 rad/s, Kp=10, Kd=0.5')
-        motor.move_control(torque=0.0, angle=0.0, speed=0.0, kp=20.0, kd=1.0)
-        time.sleep(3.0)
+        # print('\n[2] 복합 제어: 각도 1.0 rad, 속도 5 rad/s, Kp=10, Kd=0.5')
+        # motor.move_control(torque=0.0, angle=0.0, speed=0.0, kp=10.0, kd=1.0)
+        # time.sleep(3.0)
 
         # # #
         # # #

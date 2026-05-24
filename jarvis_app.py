@@ -38,81 +38,7 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
     PROMPT=("너는 자비스야. 나한테 완전 친한 친구처럼 말해.\n"
             "반말 쓰고, 편하게 툭툭 던지듯이 얘기해줘.\n"
             "이모지, 이모티콘, 특수문자 절대 쓰지 마.\n"
-            "2문장 이내로 짧고 빠릿하게 답해. 영어 쓰지 마.\n"
-            "로봇팔 조인트(joint1~joint4)를 라디안 단위로 제어할 수 있어. "
-            "팔 움직임 명령이 오면 move_joints 도구를 사용해. "
-            "enable_motors, disable_motors로 모터 켜고 끄기 가능.")
-
-    # ── 로봇팔 Tool 정의 ──────────────────────────────────────────────────────────
-    ARM_TOOLS = [
-        {
-            "type": "function",
-            "function": {
-                "name": "move_joints",
-                "description": "로봇팔 조인트를 목표 각도로 이동. 각도 단위: 라디안.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "angles": {
-                            "type": "object",
-                            "description": "조인트 이름과 목표 각도(rad). 예: {\"joint1\": 0.5}",
-                            "additionalProperties": {"type": "number"}
-                        }
-                    },
-                    "required": ["angles"]
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "enable_motors",
-                "description": "로봇팔 전체 모터 활성화.",
-                "parameters": {"type": "object", "properties": {}}
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "disable_motors",
-                "description": "로봇팔 전체 모터 비활성화.",
-                "parameters": {"type": "object", "properties": {}}
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "get_joint_states",
-                "description": "현재 조인트 상태(각도, 속도, 토크, 온도) 조회.",
-                "parameters": {"type": "object", "properties": {}}
-            }
-        },
-    ]
-
-    def dispatch_tool(tc, arm):
-        name = tc.function.name
-        args = tc.function.arguments if hasattr(tc.function, "arguments") else {}
-        if name == "move_joints":
-            angles = args.get("angles", {})
-            arm.set_joints(angles=angles)
-            readable = ", ".join(f"{k}={v:.3f}rad" for k, v in angles.items())
-            log.info(f"move_joints 실행: {readable}")
-            return f"이동 완료: {readable}"
-        elif name == "enable_motors":
-            arm.enable_all()
-            log.info("enable_motors 실행")
-            return "모터 활성화 완료"
-        elif name == "disable_motors":
-            arm.disable_all()
-            log.info("disable_motors 실행")
-            return "모터 비활성화 완료"
-        elif name == "get_joint_states":
-            states = arm.get_states()
-            lines = [f"{n}: {s['angle']:.3f}rad" for n, s in states.items()]
-            result = "현재 상태: " + ", ".join(lines)
-            log.info(result)
-            return result
-        return "알 수 없는 명령"
+            "2문장 이내로 짧고 빠릿하게 답해. 영어 쓰지 마.")
 
     import re as _re
     _EMOJI_RE = _re.compile(
@@ -162,20 +88,30 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
             while pygame.mixer.music.get_busy(): await asyncio.sleep(0.05)
             pygame.mixer.quit(); os.unlink(tmp)
 
-    def find_mic():
-        devices = sd.query_devices()
-        candidates = [(i, d) for i, d in enumerate(devices) if d["max_input_channels"] > 0]
-        log.info(f"입력 장치 목록: {[(i, d['name']) for i, d in candidates]}")
-        for i, d in candidates:
-            if MIC.lower() in d["name"].lower():
-                log.info(f"마이크 선택: [{i}] {d['name']}")
-                return i
-        log.warning(f"'{MIC}' 없음, 기본 장치 사용")
-        send({"t":"status","v":f"MIC '{MIC}' 없음 - 기본 장치 사용"})
-        default = sd.default.device[0]
-        if isinstance(default, int) and 0 <= default < len(devices):
-            return default
-        return candidates[0][0] if candidates else None
+    def find_mic(retries: int = 10, delay: float = 0.5):
+        for attempt in range(retries):
+            try:
+                devices = sd.query_devices()
+            except Exception as e:
+                log.warning(f"query_devices 실패 (시도 {attempt+1}/{retries}): {e}")
+                time.sleep(delay)
+                continue
+            candidates = [(i, d) for i, d in enumerate(devices) if d["max_input_channels"] > 0]
+            if not candidates:
+                log.warning(f"입력 장치 없음 (시도 {attempt+1}/{retries}), 재시도...")
+                time.sleep(delay)
+                continue
+            log.info(f"입력 장치 목록: {[(i, d['name']) for i, d in candidates]}")
+            for i, d in candidates:
+                if MIC.lower() in d["name"].lower():
+                    log.info(f"마이크 선택: [{i}] {d['name']}")
+                    return i
+            log.warning(f"'{MIC}' 없음, 첫 번째 입력 장치 사용")
+            send({"t":"status","v":f"MIC '{MIC}' 없음 - 기본 장치 사용"})
+            return candidates[0][0]
+        log.error("마이크 탐색 실패: 입력 장치를 찾을 수 없음")
+        send({"t":"status","v":"MIC_NOT_FOUND"})
+        return None
 
     send({"t":"status","v":"INIT"})
     whisper=WhisperModel(WM,device="cpu",compute_type="int8")
@@ -203,14 +139,16 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
         try:
             send({"t":"status","v":"WAIT"})
             buf=[]; sil_t=None; speaking=False; t0=None
+            if mic is None:
+                mic = find_mic()
             _open_dev = mic
             try:
                 _test = sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
                                        blocksize=CHUNK,device=_open_dev)
                 _test.close()
             except Exception as _mic_open_err:
-                log.warning(f"마이크 [{mic}] 열기 실패: {_mic_open_err} → 기본 장치로 재시도")
-                mic = None; _open_dev = None
+                log.warning(f"마이크 [{mic}] 열기 실패: {_mic_open_err} → 재탐색")
+                mic = find_mic(); _open_dev = mic
             with sd.InputStream(samplerate=SR,channels=CH,dtype="float32",
                                 blocksize=CHUNK,device=_open_dev) as stream:
                 while not speaking:
@@ -243,26 +181,30 @@ def backend_main(ui_q: mp.Queue, _cmd_q: mp.Queue):
                 send({"t":"ai","ts":now(),"text":fw}); tts.put(fw); tts.done()
                 send({"t":"done"}); break
 
+            # ── 춤 키워드 감지 ────────────────────────────────────────────────────
+            if arm and any(k in text for k in ("깝쳐봐", "깝쳐 봐", "깝쳐", "깝쳐봐라",
+                                               "깜짝아", "깜짝 아", "깜짝놀", "깜짝 놀")):
+                reply = "ㅋㅋ 알겠어, 깝쳐볼게."
+                send({"t":"ai","ts":now(),"text":reply})
+                tts.put(reply)
+                time.sleep(5)
+                def _run_action():
+                    arm.enable_all()
+                    time.sleep(0.5)
+                    arm.action_1()
+                threading.Thread(target=_run_action, daemon=True).start()
+                tts.done(); send({"t":"status","v":"WAIT"})
+                hist.append({"role":"user","content":text})
+                hist.append({"role":"assistant","content":reply})
+                continue
+
             hist.append({"role":"user","content":text})
             msgs=[{"role":"system","content":PROMPT}]+hist
             send({"t":"status","v":"LLM"}); send({"t":"stream","v":""})
             log.info(f"사용자 입력: {text}")
 
-            log.debug(f"LLM 호출 (tools={'ON' if arm else 'OFF'})")
-            resp = client.chat(
-                model=LLM,
-                messages=msgs,
-                tools=ARM_TOOLS if arm else None,
-            )
-            log.debug(f"LLM 응답: content={repr(resp.message.content)}, tool_calls={resp.message.tool_calls}")
-
-            if arm and resp.message.tool_calls:
-                log.info(f"Tool 호출: {[tc.function.name for tc in resp.message.tool_calls]}")
-                tool_msgs = msgs + [resp.message]
-                for tc in resp.message.tool_calls:
-                    result = dispatch_tool(tc, arm)
-                    tool_msgs.append({"role": "tool", "content": result, "name": tc.function.name})
-                resp = client.chat(model=LLM, messages=tool_msgs)
+            resp = client.chat(model=LLM, messages=msgs)
+            log.debug(f"LLM 응답: content={repr(resp.message.content)}")
 
             full = resp.message.content or ""
             full_clean = full.strip()

@@ -6,10 +6,10 @@ can:
 
 # ── 조인트 → CAN ID 매핑 + 각도 리밋 (단위: deg) ──────────────────────────────
 joints:
-  joint1: { can_id: 1, motor_model: RS06, limit_min: -90.0, limit_max:  90.0, kp: 5.0, kd: 1.0, sign:  1 }
-  joint2: { can_id: 2, motor_model: RS06, limit_min: -10.0, limit_max:  90.0, kp: 5.0, kd: 1.0, sign:  1 }
-  joint3: { can_id: 3, motor_model: RS02, limit_min: -90.0, limit_max:  90.0, kp: 5.0, kd: 1.0, sign:  1 }
-  joint4: { can_id: 4, motor_model: RS02, limit_min: -50.0, limit_max:  90.0, kp: 5.0, kd: 1.0, sign:  1 }
+  joint1: { can_id: 1, motor_model: RS06, limit_min: -90.0, limit_max:  90.0, kp: 20.0, kd: 0.5, sign:  1 }
+  joint2: { can_id: 2, motor_model: RS06, limit_min: -10.0, limit_max:  90.0, kp: 20.0, kd: 0.5, sign:  -1 }
+  joint3: { can_id: 3, motor_model: RS02, limit_min: -90.0, limit_max:  90.0, kp: 10.0, kd: 0.5, sign:  1 }
+  joint4: { can_id: 4, motor_model: RS02, limit_min: -50.0, limit_max:  90.0, kp: 10.0, kd: 0.5, sign:  1 }
 
 
 # ── MIT 제어 게인 기본값 (조인트별 kp/kd 미지정 시 폴백) ──────────────────────

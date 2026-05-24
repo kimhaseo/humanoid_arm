@@ -8,7 +8,7 @@ import numpy as np
 
 _DEFAULT_URDF = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "7dof_arm_urdf", "7dof_arm_urdf.urdf",
+    "right_arm_urdf", "right_arm_urdf.urdf",
 )
 
 
