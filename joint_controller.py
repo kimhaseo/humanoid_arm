@@ -463,6 +463,15 @@ class JointController:
             while len(trajs[name]) < max_len:
                 trajs[name].append(last)
 
+        def _precise_sleep(deadline: float):
+            # Windows에서 time.sleep 정밀도가 ~15ms이므로
+            # 잔여 2ms 이상은 sleep, 이하는 busy-wait
+            remaining = deadline - time.perf_counter()
+            if remaining > 0.002:
+                time.sleep(remaining - 0.002)
+            while time.perf_counter() < deadline:
+                pass
+
         def _run():
             # 절대 시각 기준으로 sleep → 드리프트 누적 방지
             t_next = time.perf_counter()
@@ -481,9 +490,7 @@ class JointController:
                     with self._vis_lock:
                         self._vis_angles = step_angles
                 t_next += dt
-                remaining = t_next - time.perf_counter()
-                if remaining > 0:
-                    time.sleep(remaining)
+                _precise_sleep(t_next)
 
             if settle_time > 0:
                 time.sleep(settle_time)

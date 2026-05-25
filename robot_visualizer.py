@@ -104,6 +104,21 @@ class RobotVisualizer:
                 self._q[idx] = val
         self._vis.display(self._q)
 
+    def set_background(
+        self,
+        top:    tuple[float, float, float] = (0.1, 0.1, 0.1),
+        bottom: tuple[float, float, float] = (0.05, 0.05, 0.05),
+    ):
+        """
+        배경색 설정. RGB 값은 0.0 ~ 1.0.
+
+        Args:
+            top:    상단 색상 (기본: 어두운 회색)
+            bottom: 하단 색상 (기본: 더 어두운 회색)
+        """
+        self._vis.viewer["/Background"].set_property("top_color",    list(top))
+        self._vis.viewer["/Background"].set_property("bottom_color", list(bottom))
+
     def reset(self):
         """모든 조인트를 영점으로 리셋."""
         self._q = self._pin.neutral(self.model)
