@@ -285,6 +285,14 @@ class JointController:
         self._rx_thread  = threading.Thread(target=self._rx_loop, daemon=True)
         self._rx_thread.start()
 
+        # MeshCat 렌더링 전용 스레드 (모터 루프와 완전 분리, 30Hz)
+        self._vis_angles: dict[str, float] | None = None
+        self._vis_lock   = threading.Lock()
+        self._vis_thread: threading.Thread | None = None
+        if self._visualizer is not None:
+            self._vis_thread = threading.Thread(target=self._vis_loop, daemon=True)
+            self._vis_thread.start()
+
     def _build_ik_solver(self, urdf_path: str | None):
         import os
         from ik_solver import IKSolver
@@ -302,6 +310,22 @@ class JointController:
                 continue
             for motor in self.motors.values():
                 motor.parse(msg)
+
+    def _vis_loop(self):
+        """30Hz 고정 주기로 최신 joint angles를 MeshCat에 렌더링."""
+        interval = 1.0 / 30
+        t_next = time.perf_counter()
+        while not self._stop_event.is_set():
+            with self._vis_lock:
+                angles = dict(self._vis_angles) if self._vis_angles is not None else None
+            if angles is not None:
+                self._visualizer.display(angles)
+            t_next += interval
+            remaining = t_next - time.perf_counter()
+            if remaining > 0:
+                time.sleep(remaining)
+            else:
+                t_next = time.perf_counter()  # 렌더링이 밀렸으면 기준 시각 재설정
 
     # ── 활성화 / 비활성화 ──────────────────────────────────────────────────────
 
@@ -396,21 +420,23 @@ class JointController:
         angles:   dict[str, float],
         max_vel:  float | dict[str, float] = 1.0,
         max_acc:  float | dict[str, float] = 2.0,
-        dt:       float = 0.01,
-        kp:       float | dict[str, float] | None = None,
-        kd:       float | dict[str, float] | None = None,
-        wait:     bool = True,
+        dt:          float = 0.005,
+        kp:          float | dict[str, float] | None = None,
+        kd:          float | dict[str, float] | None = None,
+        settle_time: float = 0.1,
+        wait:        bool = True,
     ):
         """
         현재 위치를 읽고 사다리꼴 가감속 궤적으로 목표 위치까지 이동.
 
         Args:
-            angles:  {'joint1': rad, ...} 목표 각도
-            max_vel: 최대 속도 [rad/s] — 단일 값 또는 조인트별 dict
-            max_acc: 최대 가속도 [rad/s²] — 단일 값 또는 조인트별 dict
-            dt:      제어 주기 [s] (기본 10ms = 100Hz)
-            kp/kd:   게인 (None 이면 config 값 사용)
-            wait:    True 이면 이동 완료 후 반환
+            angles:      {'joint1': rad, ...} 목표 각도
+            max_vel:     최대 속도 [rad/s] — 단일 값 또는 조인트별 dict
+            max_acc:     최대 가속도 [rad/s²] — 단일 값 또는 조인트별 dict
+            dt:          제어 주기 [s] (기본 5ms = 200Hz)
+            kp/kd:       게인 (None 이면 config 값 사용)
+            settle_time: 궤적 완료 후 PD 수렴 대기 시간 [s] (기본 0.1s)
+            wait:        True 이면 이동 완료 후 반환
         """
         def _get(param, name):
             return param.get(name) if isinstance(param, dict) else param
@@ -452,11 +478,15 @@ class JointController:
                     )
                     step_angles[name] = pos
                 if self._visualizer is not None:
-                    self._visualizer.display(step_angles)
+                    with self._vis_lock:
+                        self._vis_angles = step_angles
                 t_next += dt
                 remaining = t_next - time.perf_counter()
                 if remaining > 0:
                     time.sleep(remaining)
+
+            if settle_time > 0:
+                time.sleep(settle_time)
 
         if wait:
             _run()
@@ -465,24 +495,26 @@ class JointController:
 
     def move_joint(
         self,
-        joint_name: str,
-        angle:    float,
-        max_vel:  float = 1.0,
-        max_acc:  float = 2.0,
-        dt:       float = 0.01,
-        kp:       float | None = None,
-        kd:       float | None = None,
-        wait:     bool = True,
+        joint_name:  str,
+        angle:       float,
+        max_vel:     float = 1.0,
+        max_acc:     float = 2.0,
+        dt:          float = 0.005,
+        kp:          float | None = None,
+        kd:          float | None = None,
+        settle_time: float = 0.1,
+        wait:        bool = True,
     ):
         """단일 조인트 가감속 궤적 이동."""
         self.move_joints_traj(
-            angles  = {joint_name: angle},
-            max_vel = {joint_name: max_vel},
-            max_acc = {joint_name: max_acc},
-            dt      = dt,
-            kp      = {joint_name: kp} if kp is not None else None,
-            kd      = {joint_name: kd} if kd is not None else None,
-            wait    = wait,
+            angles       = {joint_name: angle},
+            max_vel      = {joint_name: max_vel},
+            max_acc      = {joint_name: max_acc},
+            dt           = dt,
+            kp           = {joint_name: kp} if kp is not None else None,
+            kd           = {joint_name: kd} if kd is not None else None,
+            settle_time  = settle_time,
+            wait         = wait,
         )
 
     def move_pose(
@@ -491,9 +523,10 @@ class JointController:
         orientation: list[float] | None = None,
         max_vel:     float | dict[str, float] = 1.0,
         max_acc:     float | dict[str, float] = 2.0,
-        dt:          float = 0.01,
+        dt:          float = 0.005,
         kp:          float | dict[str, float] | None = None,
         kd:          float | dict[str, float] | None = None,
+        settle_time: float = 0.1,
         wait:        bool = True,
     ):
         """
@@ -507,13 +540,14 @@ class JointController:
             max_acc:     최대 가속도 [rad/s²] — 단일 값 또는 조인트별 dict
             dt:          제어 주기 [s]
             kp/kd:       게인 (None 이면 config 값 사용)
+            settle_time: 궤적 완료 후 PD 수렴 대기 시간 [s] (기본 0.1s)
             wait:        True 이면 이동 완료 후 반환
         """
         angles = self._ik_solver.ik(position, orientation)
         self.move_joints_traj(
             angles=angles,
             max_vel=max_vel, max_acc=max_acc,
-            dt=dt, kp=kp, kd=kd, wait=wait,
+            dt=dt, kp=kp, kd=kd, settle_time=settle_time, wait=wait,
         )
 
     # ── 상태 조회 ──────────────────────────────────────────────────────────────
@@ -552,35 +586,35 @@ class JointController:
         print("[1] 원점으로 가감속 이동")
         self.move_joints_traj(
             angles={f'joint{i}': 0.0 for i in range(1, 6)},
-            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+            max_vel=0.5, max_acc=0.5,
         )
         self.print_states()
 
         print("[2] 목표 위치로 가감속 이동")
         self.move_joints_traj(
-            angles={'joint1': 0.3, 'joint2': -0.4, 'joint3': 0.5, 'joint4': -0.2, 'joint5': -0.0},
-            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+            angles={'joint1': 0.3, 'joint2': -0.4, 'joint3': 0.5, 'joint4': 0.5, 'joint5': -0.0},
+            max_vel=0.5, max_acc=0.5,
         )
         self.print_states()
 
         print("[3] 반대 방향으로 가감속 이동")
         self.move_joints_traj(
-            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': -0.5, 'joint4': -0.6, 'joint5': -0.0},
-            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': -0.5, 'joint4': -0.0, 'joint5': -0.0},
+            max_vel=0.5, max_acc=0.5,
         )
         self.print_states()
 
         print("[4] 또 반대 방향으로 가감속 이동")
         self.move_joints_traj(
-            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': 0.5, 'joint4': -0.2, 'joint5': -0.0},
-            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': 0.5, 'joint4': 0.5, 'joint5': -0.0},
+            max_vel=0.5, max_acc=0.5,
         )
         self.print_states()
 
         print("[5] 원점 복귀")
         self.move_joints_traj(
             angles={f'joint{i}': 0.0 for i in range(1, 6)},
-            max_vel=0.5, max_acc=0.5, kp=10.0, kd=0.5,
+            max_vel=0.5, max_acc=0.5,
         )
         self.print_states()
 
@@ -589,6 +623,8 @@ class JointController:
     def shutdown(self):
         self._stop_event.set()
         self._rx_thread.join(timeout=1.0)
+        if self._vis_thread is not None:
+            self._vis_thread.join(timeout=1.0)
         self.bus.shutdown()
         print("[JointController] 종료")
 
