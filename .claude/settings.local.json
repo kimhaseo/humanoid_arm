@@ -15,7 +15,10 @@
       "Bash(Rename-Item \"link_1-v2.stl\" \"link_1.stl\")",
       "Bash(Rename-Item \"link_2-v2.stl\" \"link_2.stl\")",
       "Bash(Rename-Item \"link_3-v1.stl\" \"link_3.stl\")",
-      "Bash(Rename-Item \"link_4-v2.stl\" \"link_4.stl\")"
+      "Bash(Rename-Item \"link_4-v2.stl\" \"link_4.stl\")",
+      "Bash(Remove-Item \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\jarvis_app.py\", \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\jarvis.log\", \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\voice_assistant.py\", \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\requirements_voice.txt\" -Force)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\" -File)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
