@@ -38,7 +38,7 @@ class TeachApp:
         self.freedrive_active = False
         self._freedrive_stop  = threading.Event()
         self._play_stop       = threading.Event()
-        self.waypoints: list[dict[str, float]] = []
+        self.waypoints: list[dict] = []  # [{'angles': {...}, 'duration_sec': float}, ...]
 
         os.makedirs(SCENARIOS_DIR, exist_ok=True)
         self._build_ui()
@@ -139,46 +139,56 @@ class TeachApp:
         ttk.Label(frame, text="손으로 관절 이동 가능", foreground="#888",
                   font=("Consolas", 9)).grid(row=1, column=0)
 
-        ttk.Separator(frame, orient="horizontal").grid(row=2, column=0, sticky="ew", pady=10)
+        ttk.Label(frame, text="구간 길이 (초, 박자)").grid(row=2, column=0)
+        dur_frame = ttk.Frame(frame)
+        dur_frame.grid(row=3, column=0, sticky="ew")
+        self.duration_var = tk.DoubleVar(value=1.0)
+        ttk.Spinbox(dur_frame, from_=0.1, to=30.0, increment=0.1,
+                    textvariable=self.duration_var, width=6,
+                    justify="right").pack(side="left")
+        ttk.Label(dur_frame, text="초 → 다음 Record 시 이 시간에 도착").pack(side="left", padx=(6, 0))
 
         self.btn_record = ttk.Button(
             frame, text="● Record Point",
             style="Record.TButton",
             command=self._record_point, width=18,
         )
-        self.btn_record.grid(row=3, column=0, pady=(0, 8))
+        self.btn_record.grid(row=4, column=0, pady=(8, 4))
 
-        ttk.Label(frame, text="현재 위치를 웨이포인트로 저장", foreground="#888",
-                  font=("Consolas", 9)).grid(row=4, column=0)
+        ttk.Label(frame, text="현재 위치를 (구간 길이와 함께) 웨이포인트로 저장",
+                  foreground="#888", font=("Consolas", 9)).grid(row=5, column=0)
 
-        ttk.Separator(frame, orient="horizontal").grid(row=5, column=0, sticky="ew", pady=10)
+        ttk.Button(frame, text="선택 웨이포인트에 구간 길이 적용",
+                   command=self._apply_duration, width=28).grid(row=6, column=0, pady=(4, 0))
 
-        ttk.Label(frame, text="재생 속도 (rad/s)").grid(row=6, column=0)
-        self.speed_var = tk.DoubleVar(value=0.5)
+        ttk.Separator(frame, orient="horizontal").grid(row=7, column=0, sticky="ew", pady=10)
+
+        ttk.Label(frame, text="재생 배속").grid(row=8, column=0)
+        self.speed_var = tk.DoubleVar(value=1.0)
         speed_frame = ttk.Frame(frame)
-        speed_frame.grid(row=7, column=0, sticky="ew")
-        ttk.Scale(speed_frame, from_=0.1, to=2.0, variable=self.speed_var,
+        speed_frame.grid(row=9, column=0, sticky="ew")
+        ttk.Scale(speed_frame, from_=0.25, to=3.0, variable=self.speed_var,
                   orient="horizontal", length=140,
-                  command=lambda v: self.speed_label.config(text=f"{float(v):.1f}")).pack(side="left")
-        self.speed_label = ttk.Label(speed_frame, text="0.5", width=4)
+                  command=lambda v: self.speed_label.config(text=f"{float(v):.2f}x")).pack(side="left")
+        self.speed_label = ttk.Label(speed_frame, text="1.00x", width=5)
         self.speed_label.pack(side="left")
 
         btn_row = ttk.Frame(frame)
-        btn_row.grid(row=8, column=0, pady=(8, 0))
+        btn_row.grid(row=10, column=0, pady=(8, 0))
         self.btn_play = ttk.Button(btn_row, text="▶ 재생", style="Play.TButton",
                                    command=self._play_scenario, width=9)
         self.btn_play.pack(side="left", padx=(0, 4))
         ttk.Button(btn_row, text="■ 정지", style="Stop.TButton",
                    command=self._stop_scenario, width=9).pack(side="left")
 
-        ttk.Separator(frame, orient="horizontal").grid(row=9, column=0, sticky="ew", pady=10)
+        ttk.Separator(frame, orient="horizontal").grid(row=11, column=0, sticky="ew", pady=10)
 
-        ttk.Label(frame, text="시나리오 이름").grid(row=10, column=0)
+        ttk.Label(frame, text="시나리오 이름").grid(row=12, column=0)
         self.scenario_name_var = tk.StringVar(value="scenario_1")
-        ttk.Entry(frame, textvariable=self.scenario_name_var, width=20).grid(row=11, column=0, pady=4)
+        ttk.Entry(frame, textvariable=self.scenario_name_var, width=20).grid(row=13, column=0, pady=4)
 
         save_row = ttk.Frame(frame)
-        save_row.grid(row=12, column=0)
+        save_row.grid(row=14, column=0)
         ttk.Button(save_row, text="저장",    command=self._save_scenario,  width=9).pack(side="left", padx=(0, 4))
         ttk.Button(save_row, text="불러오기", command=self._load_scenario, width=9).pack(side="left")
 
@@ -186,10 +196,12 @@ class TeachApp:
         frame = ttk.LabelFrame(parent, text=" Waypoints ", padding=10)
         frame.grid(row=1, column=2, sticky="nsew")
 
-        cols = ["#"] + JOINT_NAMES
+        cols = ["#", "Dur(s)"] + JOINT_NAMES
         self.tree = ttk.Treeview(frame, columns=cols, show="headings", height=15)
         self.tree.heading("#", text="#")
         self.tree.column("#", width=30, anchor="center")
+        self.tree.heading("Dur(s)", text="Dur(s)")
+        self.tree.column("Dur(s)", width=55, anchor="e")
         for name in JOINT_NAMES:
             self.tree.heading(name, text=name)
             self.tree.column(name, width=70, anchor="e")
@@ -277,14 +289,25 @@ class TeachApp:
             self._set_status("연결되지 않음", "red")
             return
         angles = {name: motor.state.angle for name, motor in self.ctrl.motors.items()}
-        self.waypoints.append(angles)
+        self.waypoints.append({"angles": angles, "duration_sec": self.duration_var.get()})
         self._refresh_tree()
         self._set_status(f"웨이포인트 {len(self.waypoints)}번 저장됨", "green")
+
+    def _apply_duration(self):
+        idx = self._selected_index()
+        if idx is None:
+            self._set_status("웨이포인트를 먼저 선택하세요", "orange")
+            return
+        self.waypoints[idx]["duration_sec"] = self.duration_var.get()
+        self._refresh_tree()
+        self.tree.selection_set(str(idx + 1))
+        self._set_status(f"웨이포인트 {idx + 1}번 구간 길이 적용됨", "green")
 
     def _refresh_tree(self):
         self.tree.delete(*self.tree.get_children())
         for i, wp in enumerate(self.waypoints, start=1):
-            row = [str(i)] + [f"{wp.get(name, 0.0):+.3f}" for name in JOINT_NAMES]
+            angles = wp["angles"]
+            row = [str(i), f"{wp['duration_sec']:.2f}"] + [f"{angles.get(name, 0.0):+.3f}" for name in JOINT_NAMES]
             self.tree.insert("", "end", iid=str(i), values=row)
 
     def _selected_index(self) -> int | None:
@@ -346,7 +369,12 @@ class TeachApp:
         if not path:
             return
         with open(path, "r", encoding="utf-8") as f:
-            self.waypoints = json.load(f)
+            raw = json.load(f)
+        # 구버전 시나리오(관절각만 있는 flat dict) 호환
+        self.waypoints = [
+            wp if "angles" in wp else {"angles": wp, "duration_sec": 1.0}
+            for wp in raw
+        ]
         self._refresh_tree()
         name = os.path.splitext(os.path.basename(path))[0]
         self.scenario_name_var.set(name)
@@ -372,7 +400,7 @@ class TeachApp:
         self._play_stop.set()
 
     def _play_thread(self):
-        speed = self.speed_var.get()
+        tempo = self.speed_var.get()  # 배속 — 1.0 이면 기록된 duration_sec 그대로
         total = len(self.waypoints)
         for i, wp in enumerate(self.waypoints, start=1):
             if self._play_stop.is_set():
@@ -380,10 +408,9 @@ class TeachApp:
                 break
             self.root.after(0, lambda i=i: self._set_status(
                 f"재생 중... {i}/{total}", "#7ec8e3"))
-            self.ctrl.move_joints_traj(
-                angles  = wp,
-                max_vel = speed,
-                max_acc = speed * 2,
+            self.ctrl.move_joints_timed(
+                angles       = wp["angles"],
+                duration_sec = wp["duration_sec"] / tempo,
             )
         else:
             self.root.after(0, lambda: self._set_status("재생 완료", "green"))

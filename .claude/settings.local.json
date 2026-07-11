@@ -18,7 +18,14 @@
       "Bash(Rename-Item \"link_4-v2.stl\" \"link_4.stl\")",
       "Bash(Remove-Item \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\jarvis_app.py\", \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\jarvis.log\", \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\voice_assistant.py\", \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\\\\requirements_voice.txt\" -Force)",
       "Bash(Get-ChildItem \"C:\\\\Users\\\\gktj0\\\\PycharmProjects\\\\humanoid_arm\" -File)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(xargs -I{} sh -c 'echo ---{}---; cat {}')",
+      "Bash(python3 -m py_compile joint_controller.py teach_app.py)",
+      "Bash(git rm *)",
+      "Bash(python3 -c \"import xml.dom.minidom as m; m.parse\\('/Users/kimhaseo/workspace/humanoid_arm/right_arm_urdf/right_arm_urdf.urdf'\\); print\\('XML OK'\\)\")",
+      "Bash(gh api *)",
+      "Bash(echo \"EXIT:$?\")",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

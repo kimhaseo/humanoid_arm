@@ -238,6 +238,36 @@ def _trapezoid_profile(
     return waypoints
 
 
+def _ease_profile(
+    q0: float,
+    q1: float,
+    duration: float,
+    dt: float = 0.005,
+) -> list[tuple[float, float]]:
+    """
+    코사인 이즈인아웃 프로파일로 q0 → q1을 정확히 duration초에 이동.
+    시작/끝 속도가 0으로 수렴하며, 여러 조인트를 같은 박자(시간)에 맞춰
+    동시 도착시키고 싶을 때 _trapezoid_profile 대신 사용한다.
+
+    Returns:
+        [(position, velocity), ...] at dt 간격. 마지막은 항상 (q1, 0.0).
+    """
+    if duration <= 0:
+        raise ValueError(f"duration은 양수여야 합니다: {duration}")
+
+    d = q1 - q0
+    n_steps = max(1, round(duration / dt))
+    waypoints: list[tuple[float, float]] = []
+    for step in range(n_steps):
+        t = step * dt
+        phase = math.pi * t / duration
+        p = q0 + d * (1 - math.cos(phase)) / 2
+        v = d * (math.pi / (2 * duration)) * math.sin(phase)
+        waypoints.append((p, v))
+    waypoints.append((q1, 0.0))
+    return waypoints
+
+
 class JointController:
     """
     7개 조인트 Standard Protocol 컨트롤러.
@@ -456,6 +486,57 @@ class JointController:
             ma = _get(max_acc, name) or 2.0
             trajs[name] = _trapezoid_profile(q0, q1, mv, ma, dt)
 
+        self._execute_traj(trajs, dt=dt, kp=kp, kd=kd, settle_time=settle_time, wait=wait)
+
+    def move_joints_timed(
+        self,
+        angles:       dict[str, float],
+        duration_sec: float,
+        dt:           float = 0.005,
+        kp:           float | dict[str, float] | None = None,
+        kd:           float | dict[str, float] | None = None,
+        settle_time:  float = 0.0,
+        wait:         bool = True,
+    ):
+        """
+        현재 위치에서 목표 위치까지 모든 조인트가 정확히 duration_sec 후에
+        동시 도착하도록 이동 (코사인 이즈인아웃). 음악 박자에 맞춘 안무 재생용 —
+        각 조인트마다 이동 거리가 달라도 도착 시각이 항상 같다.
+
+        Args:
+            angles:       {'joint1': rad, ...} 목표 각도
+            duration_sec: 이번 동작에 걸릴 시간 [s]
+            dt:           제어 주기 [s]
+            kp/kd:        게인 (None 이면 config 값 사용)
+            settle_time:  이동 완료 후 대기 시간 [s]
+            wait:         True 이면 이동 완료 후 반환
+        """
+        current = self.fetch_current_positions()
+
+        trajs: dict[str, list[tuple[float, float]]] = {}
+        for name in angles:
+            if name not in self.motors:
+                raise KeyError(f"알 수 없는 조인트: {name}")
+            q0 = current[name]
+            motor = self.motors[name]
+            q1 = max(motor.limit_min, min(motor.limit_max, angles[name]))
+            trajs[name] = _ease_profile(q0, q1, duration_sec, dt)
+
+        self._execute_traj(trajs, dt=dt, kp=kp, kd=kd, settle_time=settle_time, wait=wait)
+
+    def _execute_traj(
+        self,
+        trajs:       dict[str, list[tuple[float, float]]],
+        dt:          float,
+        kp:          float | dict[str, float] | None,
+        kd:          float | dict[str, float] | None,
+        settle_time: float,
+        wait:        bool,
+    ):
+        """trajs의 (position, velocity) 스텝들을 dt 간격으로 실시간 재생."""
+        def _get(param, name):
+            return param.get(name) if isinstance(param, dict) else param
+
         # 가장 긴 궤적 길이에 맞춰 나머지를 마지막 값으로 패딩
         max_len = max(len(t) for t in trajs.values())
         for name in trajs:
@@ -591,34 +672,6 @@ class JointController:
 
     def _action_1_body(self):
         print("[1] 원점으로 가감속 이동")
-        self.move_joints_traj(
-            angles={f'joint{i}': 0.0 for i in range(1, 6)},
-            max_vel=0.5, max_acc=0.5,
-        )
-        self.print_states()
-
-        print("[2] 목표 위치로 가감속 이동")
-        self.move_joints_traj(
-            angles={'joint1': 0.3, 'joint2': -0.4, 'joint3': 0.5, 'joint4': 0.5, 'joint5': -0.0},
-            max_vel=0.5, max_acc=0.5,
-        )
-        self.print_states()
-
-        print("[3] 반대 방향으로 가감속 이동")
-        self.move_joints_traj(
-            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': -0.5, 'joint4': -0.0, 'joint5': -0.0},
-            max_vel=0.5, max_acc=0.5,
-        )
-        self.print_states()
-
-        print("[4] 또 반대 방향으로 가감속 이동")
-        self.move_joints_traj(
-            angles={'joint1': -0.7, 'joint2': -0.2, 'joint3': 0.5, 'joint4': 0.5, 'joint5': -0.0},
-            max_vel=0.5, max_acc=0.5,
-        )
-        self.print_states()
-
-        print("[5] 원점 복귀")
         self.move_joints_traj(
             angles={f'joint{i}': 0.0 for i in range(1, 6)},
             max_vel=0.5, max_acc=0.5,
