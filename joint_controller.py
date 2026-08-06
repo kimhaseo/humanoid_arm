@@ -8,6 +8,7 @@ import math
 import time
 import threading
 import can
+from can_handler import CanHandler
 from robstride_motor_controller import (
     float_to_uint, uint_to_float, MotorState,
     COMM_MOTOR_ENABLE, COMM_MOTOR_STOP, COMM_SET_POS_ZERO,
@@ -279,17 +280,28 @@ class JointController:
         ctrl.set_joints({'joint1': 0.5, 'joint2': -0.3})
         ctrl.disable_all()
         ctrl.shutdown()
+
+        # 그리퍼와 같은 CAN 모듈(포트)을 공유하고 싶을 때:
+        shared = CanHandler(channel=CAN_CHANNEL, interface=CAN_BUSTYPE, bitrate=CAN_BITRATE)
+        ctrl = JointController(can_handler=shared)
+        gripper = Gripper(motor_id=8, can_handler=shared)
+        ctrl.attach_gripper(gripper)   # 그리퍼 응답도 ctrl의 rx 스레드가 처리 (recv 경쟁 방지)
     """
 
     def __init__(
         self,
-        channel:    str = CAN_CHANNEL,
-        bustype:    str = CAN_BUSTYPE,
-        bitrate:    int = CAN_BITRATE,
-        urdf_path:  str | None = None,
+        channel:     str = CAN_CHANNEL,
+        bustype:     str = CAN_BUSTYPE,
+        bitrate:     int = CAN_BITRATE,
+        urdf_path:   str | None = None,
         visualizer=None,
+        can_handler: CanHandler | None = None,
     ):
-        self.bus = can.interface.Bus(channel=channel, interface=bustype, bitrate=bitrate)
+        # can_handler를 넘기면 그리퍼 등 다른 모듈과 같은 CAN 버스(포트)를 공유한다.
+        # 같은 물리 포트를 두 번 열 수 없으므로 미지정 시에만 자체적으로 새로 연다.
+        self._owns_can = can_handler is None
+        self.can_handler = can_handler or CanHandler(channel=channel, interface=bustype, bitrate=bitrate)
+        self.bus = self.can_handler.bus
 
         self.motors: dict[str, _Motor] = {
             name: _Motor(
@@ -307,6 +319,11 @@ class JointController:
             )
             for name, jcfg in JOINT_CONFIGS.items()
         }
+
+        # 단일 rx 스레드가 프레임마다 순회 호출하는 리스너 목록.
+        # 각 리스너(모터/그리퍼)는 .parse(msg)로 자기 arb_id인지 직접 판별한다.
+        # attach_gripper()로 그리퍼도 이 목록에 추가하면 recv() 경쟁 없이 공유 가능.
+        self._listeners: list = list(self.motors.values())
 
         self._ik_solver  = self._build_ik_solver(urdf_path)
         self._visualizer = visualizer
@@ -338,8 +355,29 @@ class JointController:
             msg = self.bus.recv(timeout=0.1)
             if msg is None:
                 continue
-            for motor in self.motors.values():
-                motor.parse(msg)
+            for listener in self._listeners:
+                listener.parse(msg)
+
+    # ── 그리퍼 등 외부 소비자 연결 ───────────────────────────────────────────────
+
+    def attach_gripper(self, gripper):
+        """
+        같은 CanHandler(버스)를 공유하는 Gripper를 이 rx 스레드에 붙인다.
+        붙은 이후 그리퍼는 자기 recv()를 호출하지 않고, 이 스레드가 넘겨주는
+        프레임을 gripper.parse()로 받아 상태를 갱신한다 (버스 recv 경쟁 방지).
+        """
+        if gripper.can is not self.can_handler:
+            raise ValueError(
+                "attach_gripper: gripper와 JointController가 같은 CanHandler를 "
+                "공유해야 합니다 (Gripper(..., can_handler=ctrl.can_handler))."
+            )
+        gripper._external_rx = True
+        self._listeners.append(gripper)
+
+    def detach_gripper(self, gripper):
+        gripper._external_rx = False
+        if gripper in self._listeners:
+            self._listeners.remove(gripper)
 
     def _vis_loop(self):
         """30Hz 고정 주기로 최신 joint angles를 MeshCat에 렌더링."""
@@ -685,7 +723,8 @@ class JointController:
         self._rx_thread.join(timeout=1.0)
         if self._vis_thread is not None:
             self._vis_thread.join(timeout=1.0)
-        self.bus.shutdown()
+        if self._owns_can:
+            self.can_handler.close()
         print("[JointController] 종료")
 
 

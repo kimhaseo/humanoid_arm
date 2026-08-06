@@ -25,7 +25,12 @@
       "Bash(python3 -c \"import xml.dom.minidom as m; m.parse\\('/Users/kimhaseo/workspace/humanoid_arm/right_arm_urdf/right_arm_urdf.urdf'\\); print\\('XML OK'\\)\")",
       "Bash(gh api *)",
       "Bash(echo \"EXIT:$?\")",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('joint_controller.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kimhaseo-workspace-humanoid-arm/9e688c7a-e448-4b9d-8205-c93332043979/scratchpad/test_shared_bus.py)",
+      "Bash(.venv/bin/python /private/tmp/claude-501/-Users-kimhaseo-workspace-humanoid-arm/9e688c7a-e448-4b9d-8205-c93332043979/scratchpad/test_shared_bus.py)",
+      "Bash(python3 -)"
     ]
   }
 }
