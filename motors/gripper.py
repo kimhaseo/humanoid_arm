@@ -19,7 +19,7 @@ from typing import Optional
 
 import can
 
-from can_handler import CanHandler
+from canbus.can_handler import CanHandler
 
 # ── LK-TECH CAN PROTOCOL V2.35 명령 바이트 (단일 모터, ID = 0x140 + motor_id) ──
 ID_BASE = 0x140

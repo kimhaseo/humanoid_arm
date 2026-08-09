@@ -13,15 +13,15 @@ import time
 import json
 import os
 
-from joint_controller import JointController
+from control.joint_controller import JointController
+from paths import SCENARIOS_DIR
 
 try:
-    from robot_visualizer import RobotVisualizer
+    from viz.robot_visualizer import RobotVisualizer
     _VIS_AVAILABLE = True
 except ImportError:
     _VIS_AVAILABLE = False
 
-SCENARIOS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scenarios")
 FREEDRIVE_HZ  = 20
 
 JOINT_NAMES = [f"joint{i}" for i in range(1, 8)]

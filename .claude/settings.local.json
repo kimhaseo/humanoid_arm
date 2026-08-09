@@ -30,7 +30,20 @@
       "Bash(python3 -c ' *)",
       "Bash(python3 /private/tmp/claude-501/-Users-kimhaseo-workspace-humanoid-arm/9e688c7a-e448-4b9d-8205-c93332043979/scratchpad/test_shared_bus.py)",
       "Bash(.venv/bin/python /private/tmp/claude-501/-Users-kimhaseo-workspace-humanoid-arm/9e688c7a-e448-4b9d-8205-c93332043979/scratchpad/test_shared_bus.py)",
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(python3 -c \"import config; c = config.get_config\\(\\); print\\(c.joints['joint1']\\)\")",
+      "Bash(.venv/bin/python -c \"import pytest; print\\(pytest.__version__\\)\")",
+      "Bash(.venv/bin/python -c \"import pinocchio as pin; print\\(pin.__version__\\); print\\(hasattr\\(pin,'computeGeneralizedGravity'\\)\\)\")",
+      "Bash(grep -iE \"^\\(can|canbus|motors|kinematics|dynamics|control|viz\\)\\(\\\\.|$\\)\")",
+      "Bash(grep -iE \"^\\(config|tests|motors|kinematics|dynamics|control|viz\\)\\(\\\\.|-|$\\)\")",
+      "Bash(set -e)",
+      "Bash(git mv *)",
+      "Bash(.venv/bin/python -m py_compile control/joint_controller.py)",
+      "Bash(.venv/bin/python -m tests.test_gravity_compensation)",
+      "Bash(.venv/bin/python -c \"import viz.teach_app\")",
+      "Bash(.venv/bin/python -c \"import viz.arm_mocap\")",
+      "Bash(.venv/bin/python -m kinematics.ik_solver)",
+      "Bash(.venv/bin/python -m canbus.dummy_bus)"
     ]
   }
 }

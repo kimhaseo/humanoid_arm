@@ -22,7 +22,7 @@ try:
 except ImportError:
     raise ImportError("mediapipe 패키지 필요: pip install mediapipe")
 
-from robot_visualizer import RobotVisualizer
+from viz.robot_visualizer import RobotVisualizer
 
 
 # ── 각도 유틸 ─────────────────────────────────────────────────────────────────
@@ -202,8 +202,7 @@ class Calibrator:
 def _ensure_pose_model() -> str:
     """pose_landmarker_full.task 모델을 없으면 다운로드해서 경로 반환."""
     import urllib.request, os
-    model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "pose_landmarker_full.task")
+    from paths import POSE_MODEL_PATH as model_path
     if not os.path.isfile(model_path):
         url = ("https://storage.googleapis.com/mediapipe-models/"
                "pose_landmarker/pose_landmarker_full/float16/latest/"

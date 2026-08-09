@@ -8,8 +8,8 @@ import math
 import time
 import threading
 import can
-from can_handler import CanHandler
-from robstride_motor_controller import (
+from canbus.can_handler import CanHandler
+from motors.robstride_motor_controller import (
     float_to_uint, uint_to_float, MotorState,
     COMM_MOTOR_ENABLE, COMM_MOTOR_STOP, COMM_SET_POS_ZERO,
     COMM_MOTION_CTRL, COMM_MOTOR_REQUEST,
@@ -26,6 +26,9 @@ CAN_BITRATE = _cfg.can.bitrate
 
 DEFAULT_KP = _cfg.control.default_kp
 DEFAULT_KD = _cfg.control.default_kd
+
+DEFAULT_GRAVITY_GAIN         = _cfg.control.gravity_gain
+DEFAULT_GRAVITY_TORQUE_LIMIT = _cfg.control.gravity_torque_limit
 
 JOINT_CONFIGS = _cfg.joints  # dict[str, JointConfig]
 
@@ -48,8 +51,7 @@ class _Motor:
                  limit_min: float = P_MIN, limit_max: float = P_MAX,
                  kp: float = DEFAULT_KP, kd: float = DEFAULT_KD,
                  v_min: float = -44.0, v_max: float = 44.0,
-                 t_min: float = -17.0, t_max: float = 17.0,
-                 sign: int = 1):
+                 t_min: float = -17.0, t_max: float = 17.0):
         self.can_id     = can_id
         self.limit_min  = limit_min
         self.limit_max  = limit_max
@@ -59,7 +61,6 @@ class _Motor:
         self.v_max      = v_max
         self.t_min      = t_min
         self.t_max      = t_max
-        self.sign       = sign   # 1 or -1
         self.state  = MotorState()
         self.bus    = bus
         self._run_mode_cache = -1
@@ -81,9 +82,9 @@ class _Motor:
             return
         if comm_type == COMM_MOTOR_REQUEST:
             data = bytes(msg.data)
-            self.state.angle  = uint_to_float((data[0] << 8) | data[1], P_MIN, P_MAX, 16) * self.sign
-            self.state.speed  = uint_to_float((data[2] << 8) | data[3], self.v_min, self.v_max, 16) * self.sign
-            self.state.torque = uint_to_float((data[4] << 8) | data[5], self.t_min, self.t_max, 16) * self.sign
+            self.state.angle  = uint_to_float((data[0] << 8) | data[1], P_MIN, P_MAX, 16)
+            self.state.speed  = uint_to_float((data[2] << 8) | data[3], self.v_min, self.v_max, 16)
+            self.state.torque = uint_to_float((data[4] << 8) | data[5], self.t_min, self.t_max, 16)
             self.state.temp   = ((data[6] << 8) | data[7]) * 0.1
             self.state.error  = (ext_id >> 16) & 0x3F
             self._state_event.set()
@@ -153,11 +154,11 @@ class _Motor:
         if not self.state.enabled:
             self.enable()
 
-        torque_enc = float_to_uint(torque * self.sign, self.t_min, self.t_max, 16)
+        torque_enc = float_to_uint(torque, self.t_min, self.t_max, 16)
         ext_id = (COMM_MOTION_CTRL << 24) | (torque_enc << 8) | self.can_id
 
-        angle_enc = float_to_uint(angle * self.sign, P_MIN, P_MAX, 16)
-        speed_enc = float_to_uint(speed * self.sign, self.v_min, self.v_max, 16)
+        angle_enc = float_to_uint(angle, P_MIN, P_MAX, 16)
+        speed_enc = float_to_uint(speed, self.v_min, self.v_max, 16)
         kp_enc    = float_to_uint(kp,    KP_MIN, KP_MAX, 16)
         kd_enc    = float_to_uint(kd,    KD_MIN, KD_MAX, 16)
 
@@ -315,7 +316,6 @@ class JointController:
                 v_max=MOTOR_MODELS[jcfg.motor_model].v_max,
                 t_min=MOTOR_MODELS[jcfg.motor_model].t_min,
                 t_max=MOTOR_MODELS[jcfg.motor_model].t_max,
-                sign=jcfg.sign,
             )
             for name, jcfg in JOINT_CONFIGS.items()
         }
@@ -326,6 +326,9 @@ class JointController:
         self._listeners: list = list(self.motors.values())
 
         self._ik_solver  = self._build_ik_solver(urdf_path)
+        self._gravity    = self._build_gravity_compensator(urdf_path)
+        self._gravity_gain  = DEFAULT_GRAVITY_GAIN
+        self._gravity_limit = DEFAULT_GRAVITY_TORQUE_LIMIT
         self._visualizer = visualizer
 
         self._stop_event = threading.Event()
@@ -341,14 +344,42 @@ class JointController:
             self._vis_thread.start()
 
     def _build_ik_solver(self, urdf_path: str | None):
-        import os
-        from ik_solver import IKSolver
+        from kinematics.ik_solver import IKSolver
+        from paths import URDF_RIGHT_ARM
         if urdf_path is None:
-            urdf_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "right_arm_urdf", "right_arm_urdf.urdf",
-            )
+            urdf_path = URDF_RIGHT_ARM
         return IKSolver(urdf_path=urdf_path, active_joints=list(self.motors.keys()))
+
+    def _build_gravity_compensator(self, urdf_path: str | None):
+        from dynamics.gravity_compensation import GravityCompensator
+        from paths import URDF_RIGHT_ARM
+        if urdf_path is None:
+            urdf_path = URDF_RIGHT_ARM
+        return GravityCompensator(urdf_path=urdf_path, active_joints=list(self.motors.keys()))
+
+    # ── 중력보상 ─────────────────────────────────────────────────────────────
+
+    def set_gravity_gain(self, gain: float):
+        """중력보상 게인 [0, 1]. 0=끔, 1=풀보상. 실기에서는 0부터 서서히 올릴 것."""
+        self._gravity_gain = max(0.0, min(1.0, gain))
+
+    def _current_full_pose(self, overrides: dict[str, float] | None = None) -> dict[str, float]:
+        """마지막으로 확인된 관절 상태(캐시)에 이번 스텝 목표각을 덮어씌운 전체 자세."""
+        pose = {name: motor.state.angle for name, motor in self.motors.items()}
+        if overrides:
+            pose.update(overrides)
+        return pose
+
+    def _gravity_feedforward(self, overrides: dict[str, float] | None = None) -> dict[str, float]:
+        """게인 적용 + clamp까지 끝낸 조인트별 중력보상 토크 [Nm]."""
+        if self._gravity_gain <= 0.0:
+            return {}
+        pose  = self._current_full_pose(overrides)
+        limit = self._gravity_limit
+        return {
+            name: max(-limit, min(limit, tau * self._gravity_gain))
+            for name, tau in self._gravity.gravity_torque(pose).items()
+        }
 
     def _rx_loop(self):
         while not self._stop_event.is_set():
@@ -431,8 +462,9 @@ class JointController:
             speeds:  {'joint1': rad/s, ...} 목표 속도 (기본 0.0)
             kp:      위치 게인 - 단일 float, 조인트별 dict, 또는 None(config 값 사용)
             kd:      속도 게인 - 단일 float, 조인트별 dict, 또는 None(config 값 사용)
-            torques: {'joint1': Nm, ...} feedforward 토크 (기본 0.0)
+            torques: {'joint1': Nm, ...} feedforward 토크 (기본 0.0, gravity_gain>0 이면 중력보상 토크가 더해짐)
         """
+        grav = self._gravity_feedforward(angles)
         for name, motor in self.motors.items():
             if name not in angles:
                 continue
@@ -441,7 +473,7 @@ class JointController:
                 speed  = (speeds  or {}).get(name, 0.0),
                 kp     = kp.get(name) if isinstance(kp, dict) else kp,
                 kd     = kd.get(name) if isinstance(kd, dict) else kd,
-                torque = (torques or {}).get(name, 0.0),
+                torque = (torques or {}).get(name, 0.0) + grav.get(name, 0.0),
             )
 
     def set_joint(
@@ -454,7 +486,11 @@ class JointController:
         torque: float = 0.0,
     ):
         """단일 조인트 복합 제어 명령 전송. kp/kd 미지정 시 config 값 사용."""
-        self.motors[joint_name].control(angle=angle, speed=speed, kp=kp, kd=kd, torque=torque)
+        grav = self._gravity_feedforward({joint_name: angle})
+        self.motors[joint_name].control(
+            angle=angle, speed=speed, kp=kp, kd=kd,
+            torque=torque + grav.get(joint_name, 0.0),
+        )
 
     # ── 영점 설정 ──────────────────────────────────────────────────────────────
 
@@ -595,7 +631,8 @@ class JointController:
             # 절대 시각 기준으로 sleep → 드리프트 누적 방지
             t_next = time.perf_counter()
             for step in range(max_len):
-                step_angles: dict[str, float] = {}
+                step_angles = {name: waypoints[step][0] for name, waypoints in trajs.items()}
+                grav = self._gravity_feedforward(step_angles)
                 for name, waypoints in trajs.items():
                     pos, vel = waypoints[step]
                     self.motors[name].control(
@@ -603,8 +640,8 @@ class JointController:
                         speed  = vel,
                         kp     = _get(kp, name),
                         kd     = _get(kd, name),
+                        torque = grav.get(name, 0.0),
                     )
-                    step_angles[name] = pos
                 if self._visualizer is not None:
                     with self._vis_lock:
                         self._vis_angles = step_angles
@@ -733,10 +770,10 @@ class JointController:
 if __name__ == '__main__':
 
     # import can as _can
-    # from dummy_bus import DummyBus
+    # from canbus.dummy_bus import DummyBus
     # _can.interface.Bus = lambda **kwargs: DummyBus()
 
-    from robot_visualizer import RobotVisualizer
+    from viz.robot_visualizer import RobotVisualizer
     vis = RobotVisualizer()
     jc = JointController(visualizer=vis)
 

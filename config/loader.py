@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import yaml
 
-_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "arm_config.yaml")
+_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "arm_config.yaml")
 
 
 @dataclass
@@ -21,6 +21,8 @@ class CanConfig:
 class ControlConfig:
     default_kp: float
     default_kd: float
+    gravity_gain: float           # 0(끔)~1(풀보상)
+    gravity_torque_limit: float   # [Nm] 조인트당 clamp
 
 
 @dataclass
@@ -44,7 +46,6 @@ class JointConfig:
     limit_max:   float  # rad
     kp:          float  # position gain (overrides control.default_kp)
     kd:          float  # velocity gain (overrides control.default_kd)
-    sign:        int    # 1 or -1 — 모터 장착 방향 보정
 
 
 @dataclass
@@ -75,7 +76,12 @@ def _load(path: str) -> ArmConfig:
 
     import math
     ctrl = raw["control"]
-    control_cfg = ControlConfig(default_kp=float(ctrl["default_kp"]), default_kd=float(ctrl["default_kd"]))
+    control_cfg = ControlConfig(
+        default_kp=float(ctrl["default_kp"]),
+        default_kd=float(ctrl["default_kd"]),
+        gravity_gain=float(ctrl.get("gravity_gain", 0.0)),
+        gravity_torque_limit=float(ctrl.get("gravity_torque_limit", 5.0)),
+    )
 
     joints = {
         name: JointConfig(
@@ -85,7 +91,6 @@ def _load(path: str) -> ArmConfig:
             limit_max=math.radians(float(info["limit_max"])),
             kp=float(info["kp"]) if "kp" in info else control_cfg.default_kp,
             kd=float(info["kd"]) if "kd" in info else control_cfg.default_kd,
-            sign=int(info.get("sign", 1)),
         )
         for name, info in raw["joints"].items()
     }

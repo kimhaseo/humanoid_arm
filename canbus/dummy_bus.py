@@ -8,7 +8,7 @@ Extended Frame 프로토콜을 시뮬레이션한다:
 
 import queue
 import can
-from robstride_motor_controller import (
+from motors.robstride_motor_controller import (
     float_to_uint, uint_to_float,
     COMM_MOTOR_REQUEST, COMM_MOTION_CTRL,
     MASTER_CAN_ID, P_MIN, P_MAX, V_MIN, V_MAX, T_MIN, T_MAX,
@@ -108,7 +108,7 @@ class DummyBus:
 if __name__ == '__main__':
     import time
     import can as _can
-    from joint_controller import JointController
+    from control.joint_controller import JointController
 
     _can.interface.Bus = lambda **kwargs: DummyBus(verbose=True)
 

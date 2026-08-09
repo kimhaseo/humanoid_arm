@@ -6,13 +6,13 @@ can:
 
 # ── 조인트 → CAN ID 매핑 + 각도 리밋 (단위: deg) ──────────────────────────────
 joints:
-  joint1: { can_id: 1, motor_model: RS06, limit_min: -90.0, limit_max:  90.0, kp: 100.0, kd: 0.5, sign:  -1 }
-  joint2: { can_id: 2, motor_model: RS06, limit_min: -90.0, limit_max:  10.0, kp: 100.0, kd: 0.5, sign:  -1 }
-  joint3: { can_id: 3, motor_model: RS02, limit_min: -90.0, limit_max:  90.0, kp: 100.0, kd: 0.5, sign:  -1 }
-  joint4: { can_id: 4, motor_model: RS02, limit_min: -85.0, limit_max:  50.0, kp: 100.0, kd: 0.5, sign:  -1 }
-  joint5: { can_id: 5, motor_model: RS00, limit_min: -90.0, limit_max:  90.0, kp: 50.0, kd: 0.5, sign:  1 }
-  joint6: { can_id: 6, motor_model: RS00, limit_min: -90.0, limit_max: 90.0, kp: 50.0, kd: 0.5, sign: 1 }
-  joint7: { can_id: 7, motor_model: RS05, limit_min: -90.0, limit_max:  90.0, kp: 30.0, kd: 0.5, sign:  1 }
+  joint1: { can_id: 1, motor_model: RS06, limit_min: -90.0, limit_max:  90.0, kp: 100.0, kd: 0.5 }
+  joint2: { can_id: 2, motor_model: RS06, limit_min: -90.0, limit_max:  10.0, kp: 100.0, kd: 0.5 }
+  joint3: { can_id: 3, motor_model: RS02, limit_min: -90.0, limit_max:  90.0, kp: 100.0, kd: 0.5 }
+  joint4: { can_id: 4, motor_model: RS02, limit_min: -85.0, limit_max:  50.0, kp: 100.0, kd: 0.5 }
+  joint5: { can_id: 5, motor_model: RS00, limit_min: -90.0, limit_max:  90.0, kp: 50.0, kd: 0.5 }
+  joint6: { can_id: 6, motor_model: RS00, limit_min: -90.0, limit_max: 90.0, kp: 50.0, kd: 0.5 }
+  joint7: { can_id: 7, motor_model: RS05, limit_min: -90.0, limit_max:  90.0, kp: 30.0, kd: 0.5 }
 
 
 
@@ -20,6 +20,12 @@ joints:
 control:
   default_kp: 5.0
   default_kd: 1.0
+  # ── 중력보상 ──
+  # gravity_gain: 0(끔)~1(풀보상). URDF 질량/관성이 실측값이 아닐 수 있으므로
+  # 0에서 시작해 자세별로 방향/크기를 확인하며 서서히 올릴 것.
+  gravity_gain: 0.0
+  # 계산된 중력보상 토크의 조인트당 clamp [Nm] — 계산이 틀려도 안전 마진 확보용.
+  gravity_torque_limit: 5.0
 
 # ── 모터 물리 한계 (공통) ──────────────────────────────────────────────────────
 motor_limits:
