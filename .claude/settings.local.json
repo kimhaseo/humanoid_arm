@@ -25,7 +25,15 @@
       "Bash(python3 -c \"import xml.dom.minidom as m; m.parse\\('/Users/kimhaseo/workspace/humanoid_arm/right_arm_urdf/right_arm_urdf.urdf'\\); print\\('XML OK'\\)\")",
       "Bash(gh api *)",
       "Bash(echo \"EXIT:$?\")",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(mkdir -p \"/c/Users/gktj0/PycharmProjects/humanoid_arm/right_urdf/meshes\" && cp \"/c/Users/gktj0/OneDrive/Desktop/right_urdf/meshes/\"*.stl \"/c/Users/gktj0/PycharmProjects/humanoid_arm/right_urdf/meshes/\" && cp \"/c/Users/gktj0/OneDrive/Desktop/right_urdf/hello_bullet.py\" \"/c/Users/gktj0/PycharmProjects/humanoid_arm/right_urdf/hello_bullet.py\" && ls -la \"/c/Users/gktj0/PycharmProjects/humanoid_arm/right_urdf\" \"/c/Users/gktj0/PycharmProjects/humanoid_arm/right_urdf/meshes\")",
+      "Bash(python -c ' *)",
+      "Bash(mv base_link-v5.stl base_link.stl)",
+      "Bash(mv link_1-v2.stl link_1.stl)",
+      "Bash(mv link_2-v2.stl link_2.stl)",
+      "Bash(mv link_3-v1.stl link_3.stl)",
+      "Bash(mv link_4-v2.stl link_4.stl)",
+      "Bash(python \"C:\\\\Users\\\\gktj0\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-gktj0-PycharmProjects-humanoid-arm\\\\f4963dd2-65d1-4236-bf2e-3dfec60997b6\\\\scratchpad\\\\viz_check.py\")"
     ]
   }
 }

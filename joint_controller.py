@@ -329,7 +329,7 @@ class JointController:
         if urdf_path is None:
             urdf_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "right_arm_urdf", "right_arm_urdf.urdf",
+                "right_urdf", "right_urdf.urdf",
             )
         return IKSolver(urdf_path=urdf_path, active_joints=list(self.motors.keys()))
 

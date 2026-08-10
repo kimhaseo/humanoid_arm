@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="right_urdf">
+    <link name="base_link">
+        <inertial>
+            <origin xyz="-0.012533625342970488 -1.5680321766831598e-07 0.0010271164496856915" rpy="0.0 0.0 0.0" />
+            <mass value="2.6289526754642267" />
+            <inertia ixx="0.005014510926809133" iyy="0.0034405364773489946" izz="0.0035752840363968107" ixy="2.108663373658868e-09" iyz="-2.504692908714312e-10" ixz="-0.00011069170495900822" />
+        </inertial>
+        <visual name="base_link_visual">
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            <geometry>
+                <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="base_link_collision">
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            <geometry>
+                <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link_1">
+        <inertial>
+            <origin xyz="-0.0007577300081055296 0.09808198034339666 -0.0010590189627576506" rpy="0.0 -0.0 0.0" />
+            <mass value="2.9253509837230443" />
+            <inertia ixx="0.007315845207817959" iyy="0.0051164047891151644" izz="0.00845359681614534" ixy="-7.443368484801678e-05" iyz="0.0001486478924168222" ixz="2.346403810084552e-06" />
+        </inertial>
+        <visual name="link_1_visual">
+            <origin xyz="-7.105427357601002e-17 0.054500000000000014 -7.105427357601002e-17" rpy="1.570796326794897 -2.2175250527763805e-33 1.5707963267948966" />
+            <geometry>
+                <mesh filename="meshes/link_1.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="link_1_collision">
+            <origin xyz="-7.105427357601002e-17 0.054500000000000014 -7.105427357601002e-17" rpy="1.570796326794897 -2.2175250527763805e-33 1.5707963267948966" />
+            <geometry>
+                <mesh filename="meshes/link_1.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link_2">
+        <inertial>
+            <origin xyz="0.03437157767558235 -0.03938182416817611 9.452087555317235e-08" rpy="0.0 -0.0 0.0" />
+            <mass value="2.743489599560163" />
+            <inertia ixx="0.006754483492318747" iyy="0.00617610352955434" izz="0.00812013699004533" ixy="-0.00045722270074082915" iyz="-1.114329933708802e-08" ixz="-8.434797192299892e-09" />
+        </inertial>
+        <visual name="link_2_visual">
+            <origin xyz="0.030000000000000037 -0.085 1.7763568394002505e-17" rpy="-1.5707963267948968 -1.5707963267948966 0" />
+            <geometry>
+                <mesh filename="meshes/link_2.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="link_2_collision">
+            <origin xyz="0.030000000000000037 -0.085 1.7763568394002505e-17" rpy="-1.5707963267948968 -1.5707963267948966 0" />
+            <geometry>
+                <mesh filename="meshes/link_2.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link_3">
+        <inertial>
+            <origin xyz="0.004395092699064552 0.0005474751799303412 -0.1511977931654306" rpy="0.0 -0.0 0.0" />
+            <mass value="4.786828066244079" />
+            <inertia ixx="0.03904698845555077" iyy="0.040115359819243024" izz="0.010758720389070664" ixy="-6.968444934488767e-05" iyz="0.00031851350436926107" ixz="0.002066666323604532" />
+        </inertial>
+        <visual name="link_3_visual">
+            <origin xyz="3.552713678800501e-17 -1.4210854715202004e-16 -0.05200000000000007" rpy="4.2785231459821475e-32 -6.703971714890103e-17 3.141592653589793" />
+            <geometry>
+                <mesh filename="meshes/link_3.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="link_3_collision">
+            <origin xyz="3.552713678800501e-17 -1.4210854715202004e-16 -0.05200000000000007" rpy="4.2785231459821475e-32 -6.703971714890103e-17 3.141592653589793" />
+            <geometry>
+                <mesh filename="meshes/link_3.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link_4">
+        <inertial>
+            <origin xyz="0.042422675965205235 -0.024579115096492216 0.032060099721970804" rpy="0.0 -0.0 0.0" />
+            <mass value="2.423118371436369" />
+            <inertia ixx="0.00542438122180483" iyy="0.006684740466914342" izz="0.006061694661111117" ixy="0.00114449062757397" iyz="-0.00012017935534973379" ixz="0.0002092467502519714" />
+        </inertial>
+        <visual name="link_4_visual">
+            <origin xyz="0.11535533905935275 -0.03535533905932695 0.030000000000000568" rpy="-1.5707963267948966 -1.5707963267948966 0" />
+            <geometry>
+                <mesh filename="meshes/link_4.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="link_4_collision">
+            <origin xyz="0.11535533905935275 -0.03535533905932695 0.030000000000000568" rpy="-1.5707963267948966 -1.5707963267948966 0" />
+            <geometry>
+                <mesh filename="meshes/link_4.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link_5">
+        <inertial>
+            <origin xyz="0.10521626622593327 -2.016195566056922e-08 0.003611104844285933" rpy="0.0 -0.0 0.0" />
+            <mass value="1.7450144413361988" />
+            <inertia ixx="0.0030795074047825777" iyy="0.003893924414522118" izz="0.0028019236878646936" ixy="2.7504094834984727e-10" iyz="7.424066778005667e-10" ixz="-0.00019307607425132073" />
+        </inertial>
+        <visual name="link_5_visual">
+            <origin xyz="0.06099999905935289 -6.679687203359208e-09 7.815970093361102e-16" rpy="-1.5707963267948966 -1.5707963267948966 0" />
+            <geometry>
+                <mesh filename="meshes/link_5.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="link_5_collision">
+            <origin xyz="0.06099999905935289 -6.679687203359208e-09 7.815970093361102e-16" rpy="-1.5707963267948966 -1.5707963267948966 0" />
+            <geometry>
+                <mesh filename="meshes/link_5.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link_6">
+        <inertial>
+            <origin xyz="-0.0005325190073892827 0.03067885578774378 -0.038524468591775975" rpy="7.699667965537206e-96 -0.0 0.0" />
+            <mass value="0.2398006000337179" />
+            <inertia ixx="0.0008284102122273727" iyy="0.0008695542211465332" izz="0.00029489591400612414" ixy="-8.670206763997101e-08" iyz="-5.1893835480675e-06" ixz="-6.730198466465415e-06" />
+        </inertial>
+        <visual name="link_6_visual">
+            <origin xyz="3.3203128424474925e-09 0.02999999999999911 9.406469558825848e-10" rpy="-1.5707963267948961 -9.744164592262758e-32 -1.5707963267948966" />
+            <geometry>
+                <mesh filename="meshes/link_6.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="link_6_collision">
+            <origin xyz="3.3203128424474925e-09 0.02999999999999911 9.406469558825848e-10" rpy="-1.5707963267948961 -9.744164592262758e-32 -1.5707963267948966" />
+            <geometry>
+                <mesh filename="meshes/link_6.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link_end">
+        <inertial>
+            <origin xyz="0.024994640599820386 -1.3210838016419758e-07 -0.03023284587268883" rpy="0.0 -0.0 0.0" />
+            <mass value="0.09931289188708475" />
+            <inertia ixx="0.00011276710451101936" iyy="0.00013629674075110038" izz="9.292999199580175e-05" ixy="-5.111632549528733e-10" iyz="-5.80433538038827e-10" ixz="-6.419239937570376e-06" />
+        </inertial>
+        <visual name="link_end_visual">
+            <origin xyz="-0.04000000094064852 7.283063041541027e-16 -0.027500003320312844" rpy="3.141592653589793 3.15852510879507e-32 1.5707963267948966" />
+            <geometry>
+                <mesh filename="meshes/link_end.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </visual>
+        <collision name="link_end_collision">
+            <origin xyz="-0.04000000094064852 7.283063041541027e-16 -0.027500003320312844" rpy="3.141592653589793 3.15852510879507e-32 1.5707963267948966" />
+            <geometry>
+                <mesh filename="meshes/link_end.stl" scale="0.001 0.001 0.001" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint_1" type="revolute">
+        <origin xyz="-0.015000000000000006 2.6645352591003753e-17 1.3322676295501869e-17" rpy="1.5707963267948966 -1.5707963267948961 0" />
+        <parent link="base_link" />
+        <child link="link_1" />
+        <axis xyz="0.0 -1.0 -2.1155728675403147e-49" />
+        <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+    </joint>
+    <joint name="joint_2" type="revolute">
+        <origin xyz="-1.642146637880645e-49 0.13949999999999999 -0.03" rpy="-1.5707963267948966 -1.5707963267948966 0" />
+        <parent link="link_1" />
+        <child link="link_2" />
+        <axis xyz="-1.0 0.0 -3.175835427256606e-32" />
+        <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+    </joint>
+    <joint name="joint_3" type="revolute">
+        <origin xyz="0.03 -0.065 0.0" rpy="-1.5707963267948966 -0.0 0.0" />
+        <parent link="link_2" />
+        <child link="link_3" />
+        <axis xyz="0.0 0.0 1.0" />
+        <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+    </joint>
+    <joint name="joint_4" type="revolute">
+        <origin xyz="0.025 0.03 -0.272" rpy="1.5707963267948966 -0.0 -1.754545230374717e-32" />
+        <parent link="link_3" />
+        <child link="link_4" />
+        <axis xyz="-1.754545230374717e-32 0.0 -1.0" />
+        <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+    </joint>
+    <joint name="joint_5" type="revolute">
+        <origin xyz="0.054355339999999995 -0.035355339999999985 0.03" rpy="-9.860761315262648e-32 1.7545452303747168e-32 0.0" />
+        <parent link="link_4" />
+        <child link="link_5" />
+        <axis xyz="-1.0 0.0 -5.205490324089919e-32" />
+        <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+    </joint>
+    <joint name="joint_6" type="revolute">
+        <origin xyz="0.13599999999999998 -9.999999974752428e-09 0.03" rpy="-1.5707963267948966 -0.0 1.5707963267948966" />
+        <parent link="link_5" />
+        <child link="link_6" />
+        <axis xyz="9.860761315262648e-32 1.0 -2.4651903288156657e-32" />
+        <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+    </joint>
+    <joint name="joint_7" type="revolute">
+        <origin xyz="-0.0275 0.03 -0.095" rpy="-3.141592653589793 1.5707963267948966 0" />
+        <parent link="link_6" />
+        <child link="link_end" />
+        <axis xyz="0.0 7.703719777548943e-34 1.0" />
+        <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+    </joint>
+</robot>

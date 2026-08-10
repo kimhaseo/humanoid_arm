@@ -87,7 +87,7 @@ class Gripper:
         max_current_a: Optional[float] = None,
         torque_constant_nm_per_a: float = 0.7,  # MG4010E-i10v3: 모터축 0.07 N·m/A × 감속비 10
         open_angle_deg: float = 0.0,
-        close_angle_deg: float = 90.0,
+        close_angle_deg: float = 0.0,
         open_direction: int = 1,
     ):
         if not (1 <= motor_id <= 32):
