@@ -12,11 +12,14 @@ CanHandler(can_handler.py)로 CAN 프레임을 직접 주고받는 방식은 기
     gripper.shutdown()
 """
 
+import threading
 import time
 from dataclasses import dataclass
 from typing import Optional
 
-from can_handler import CanHandler
+import can
+
+from canbus.can_handler import CanHandler
 
 # ── LK-TECH CAN PROTOCOL V2.35 명령 바이트 (단일 모터, ID = 0x140 + motor_id) ──
 ID_BASE = 0x140
@@ -107,6 +110,13 @@ class Gripper:
 
         self.state = GripperState()
 
+        # 외부 디스패처(예: JointController.attach_gripper)에 붙은 경우 True.
+        # 이때는 self.can.receive_message()로 직접 recv하지 않고, 디스패처가
+        # parse()를 호출해줄 때까지 이벤트로 대기한다 (버스 공유 시 recv 경쟁 방지).
+        self._external_rx = False
+        self._response_event = threading.Event()
+        self._last_frame_data: Optional[list] = None
+
     # ── Nm <-> iqControl 변환 ────────────────────────────────────────────────
 
     def _nm_to_iq(self, force_nm: float) -> int:
@@ -120,11 +130,8 @@ class Gripper:
 
     # ── 응답 프레임 파싱 ─────────────────────────────────────────────────────
 
-    def _handle_response(self, response):
-        if response is None:
-            return
-        data = list(response.data)
-        if len(data) < 8:
+    def _handle_response(self, data: Optional[list]):
+        if data is None or len(data) < 8:
             return
         cmd = data[0]
 
@@ -142,21 +149,55 @@ class Gripper:
             circle_angle = data[4] | (data[5] << 8) | (data[6] << 16) | (data[7] << 24)  # 0.01deg/LSB
             self.state.angle_deg = circle_angle / 100.0
 
+    def parse(self, msg: can.Message):
+        """
+        외부 디스패처(JointController._rx_loop 등)가 버스에서 받은 프레임마다 호출한다.
+        이 그리퍼의 arb_id로 온 응답이 아니면 무시한다.
+        """
+        if msg.is_extended_id or msg.arbitration_id != self.arb_id:
+            return
+        data = list(msg.data)
+        self._last_frame_data = data
+        self._handle_response(data)
+        self._response_event.set()
+
+    def _send_and_wait(self, data_out: list, timeout: float) -> Optional[list]:
+        """
+        명령 프레임을 보내고 응답을 기다린다.
+
+        - attach_gripper()로 JointController에 붙어있으면(self._external_rx) 그 rx
+          스레드가 이미 버스를 읽고 있으므로, 직접 recv하지 않고 parse()가 응답을
+          채워줄 때까지 이벤트로만 대기한다 (recv 경쟁/프레임 가로채기 방지).
+        - 아니면(단독 사용) 기존처럼 CanHandler.receive_message()로 직접 recv한다.
+
+        반환값: 응답 프레임의 data 리스트, 못 받으면 None.
+        """
+        if self._external_rx:
+            self._response_event.clear()
+            self.can.send_message(self.arb_id, data_out)
+            if not self._response_event.wait(timeout):
+                print(f"[Gripper] 응답 없음 (timeout={timeout}s)")
+                return None
+            return self._last_frame_data
+        else:
+            self.can.send_message(self.arb_id, data_out)
+            response = self.can.receive_message(timeout=timeout)
+            data_in = list(response.data) if response is not None else None
+            self._handle_response(data_in)
+            return data_in
+
     # ── 기본 제어 ─────────────────────────────────────────────────────────────
 
     def enable(self, timeout: float = 0.1):
-        self.can.send_message(self.arb_id, [CMD_MOTOR_ON, 0, 0, 0, 0, 0, 0, 0])
-        self.can.receive_message(timeout=timeout)  # ACK를 드레인해 다음 명령 응답과 엇갈리지 않게 함
+        self._send_and_wait([CMD_MOTOR_ON, 0, 0, 0, 0, 0, 0, 0], timeout)  # ACK를 드레인해 다음 명령 응답과 엇갈리지 않게 함
         self.state.enabled = True
 
     def disable(self, timeout: float = 0.1):
-        self.can.send_message(self.arb_id, [CMD_MOTOR_OFF, 0, 0, 0, 0, 0, 0, 0])
-        self.can.receive_message(timeout=timeout)
+        self._send_and_wait([CMD_MOTOR_OFF, 0, 0, 0, 0, 0, 0, 0], timeout)
         self.state.enabled = False
 
     def stop(self, timeout: float = 0.1):
-        self.can.send_message(self.arb_id, [CMD_MOTOR_STOP, 0, 0, 0, 0, 0, 0, 0])
-        self.can.receive_message(timeout=timeout)
+        self._send_and_wait([CMD_MOTOR_STOP, 0, 0, 0, 0, 0, 0, 0], timeout)
 
     def set_zero(self, timeout: float = 0.1) -> bool:
         """
@@ -164,17 +205,15 @@ class Gripper:
         LK-TECH 프로토콜 규격상 새 영점은 모터 재전원(재부팅) 후에 적용된다.
         반환값: 응답 프레임이 0x19 ACK였는지 여부(그 전 명령의 지연 응답과 섞인 경우 False).
         """
-        self.can.send_message(self.arb_id, [CMD_WRITE_ZERO, 0, 0, 0, 0, 0, 0, 0])
-        response = self.can.receive_message(timeout=timeout)
-        acked = response is not None and list(response.data)[0] == CMD_WRITE_ZERO
+        data = self._send_and_wait([CMD_WRITE_ZERO, 0, 0, 0, 0, 0, 0, 0], timeout)
+        acked = data is not None and data[0] == CMD_WRITE_ZERO
         if not acked:
-            print(f"[set_zero] 0x19 ACK를 받지 못함 (응답: {response})")
+            print(f"[set_zero] 0x19 ACK를 받지 못함 (응답: {data})")
         return acked
 
     def read_angle(self, timeout: float = 0.1) -> float:
         """싱글턴 절대 각도를 요청하고 state.angle_deg를 갱신 후 반환한다."""
-        self.can.send_message(self.arb_id, [CMD_READ_SINGLE_ANGLE, 0, 0, 0, 0, 0, 0, 0])
-        self._handle_response(self.can.receive_message(timeout=timeout))
+        self._send_and_wait([CMD_READ_SINGLE_ANGLE, 0, 0, 0, 0, 0, 0, 0], timeout)
         return self.state.angle_deg
 
     def set_force(self, force_nm: float, timeout: float = 0.1) -> float:
@@ -207,8 +246,7 @@ class Gripper:
             angle_enc & 0xFF, (angle_enc >> 8) & 0xFF,
             (angle_enc >> 16) & 0xFF, (angle_enc >> 24) & 0xFF,
         ]
-        self.can.send_message(self.arb_id, data)
-        self._handle_response(self.can.receive_message(timeout=timeout))
+        self._send_and_wait(data, timeout)
         return self.state.angle_deg
 
     # ── 그리퍼 개폐 ──────────────────────────────────────────────────────────
