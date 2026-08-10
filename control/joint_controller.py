@@ -8,7 +8,7 @@ import math
 import time
 import threading
 import can
-from robstride_motor_controller import (
+from motors.robstride_motor_controller import (
     float_to_uint, uint_to_float, MotorState,
     COMM_MOTOR_ENABLE, COMM_MOTOR_STOP, COMM_SET_POS_ZERO,
     COMM_MOTION_CTRL, COMM_MOTOR_REQUEST,
@@ -288,8 +288,10 @@ class JointController:
         bitrate:    int = CAN_BITRATE,
         urdf_path:  str | None = None,
         visualizer=None,
+        bus=None,
     ):
-        self.bus = can.interface.Bus(channel=channel, interface=bustype, bitrate=bitrate)
+        self.bus = bus if bus is not None else can.interface.Bus(
+            channel=channel, interface=bustype, bitrate=bitrate)
 
         self.motors: dict[str, _Motor] = {
             name: _Motor(
@@ -324,14 +326,9 @@ class JointController:
             self._vis_thread.start()
 
     def _build_ik_solver(self, urdf_path: str | None):
-        import os
-        from ik_solver import IKSolver
-        if urdf_path is None:
-            urdf_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "right_urdf", "right_urdf.urdf",
-            )
-        return IKSolver(urdf_path=urdf_path, active_joints=list(self.motors.keys()))
+        from kinematics.ik_solver import IKSolver
+        kwargs = {} if urdf_path is None else {"urdf_path": urdf_path}
+        return IKSolver(active_joints=list(self.motors.keys()), **kwargs)
 
     def _rx_loop(self):
         while not self._stop_event.is_set():
@@ -639,6 +636,23 @@ class JointController:
         )
 
     # ── 상태 조회 ──────────────────────────────────────────────────────────────
+
+    def get_ee_pose(self, angles: dict[str, float] | None = None) -> tuple[list[float], list[float]]:
+        """
+        현재(또는 지정한) 조인트 각도에서의 엔드이펙터 포즈를 순기구학으로 계산.
+        angles 미지정 시 모터에서 현재 위치를 직접 읽어온다 (응답 없으면 중립 자세로 대체).
+
+        Returns:
+            (position [x,y,z] mm, orientation [roll,pitch,yaw] deg)
+        """
+        if angles is None:
+            try:
+                angles = self.fetch_current_positions()
+            except Exception:
+                angles = {}
+        pos, rot = self._ik_solver.fk(angles)
+        rpy = self._ik_solver.matrix_to_rpy(rot)
+        return pos.tolist(), [math.degrees(r) for r in rpy]
 
     def get_states(self) -> dict[str, dict]:
         return {

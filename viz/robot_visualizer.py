@@ -5,10 +5,7 @@ RobotVisualizer - MeshCat 기반 URDF 로봇 실시간 시각화
 import os
 import numpy as np
 
-_DEFAULT_URDF = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "right_urdf", "right_urdf.urdf",
-)
+from paths import URDF_RIGHT_ARM as _DEFAULT_URDF
 
 
 class RobotVisualizer:

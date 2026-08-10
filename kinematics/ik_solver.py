@@ -6,10 +6,7 @@ import os
 import math
 import numpy as np
 
-_DEFAULT_URDF = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "right_urdf", "right_urdf.urdf",
-)
+from paths import URDF_RIGHT_ARM as _DEFAULT_URDF
 
 
 class IKSolver:

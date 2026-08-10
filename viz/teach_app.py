@@ -11,6 +11,7 @@ from tkinter import ttk, messagebox, filedialog
 import threading
 import time
 import json
+import math
 import os
 
 from control.joint_controller import JointController
@@ -28,11 +29,12 @@ JOINT_NAMES = [f"joint{i}" for i in range(1, 8)]
 
 
 class TeachApp:
-    def __init__(self):
+    def __init__(self, force_dummy: bool = False):
         self.root = tk.Tk()
         self.root.title("Robot Teach & Playback")
         self.root.resizable(False, False)
 
+        self.force_dummy = force_dummy
         self.ctrl: JointController | None = None
         self.vis:  "RobotVisualizer | None" = None
         self.freedrive_active = False
@@ -44,17 +46,60 @@ class TeachApp:
         self._build_ui()
         self._connect()
         self._init_visualizer()
+        self._init_pose_fields()
         self._schedule_state_update()
 
     # ── 연결 ──────────────────────────────────────────────────────────────────
 
     def _connect(self):
+        real_error = None
+        if not self.force_dummy:
+            try:
+                self.ctrl = JointController()
+                self.ctrl.enable_all()
+                self._conn_label, self._conn_color = "연결됨", "green"
+                self._set_status(self._conn_label, self._conn_color)
+                return
+            except Exception as e:
+                real_error = e
+
+        # force_dummy=True 이거나 실제 로봇 연결/응답 실패 → 더미 버스로 시뮬레이션 모드 진입
         try:
-            self.ctrl = JointController()
+            from canbus.dummy_bus import DummyBus
+            self.ctrl = JointController(bus=DummyBus())
             self.ctrl.enable_all()
-            self._set_status("연결됨", "green")
-        except Exception as e:
-            self._set_status(f"연결 실패: {e}", "red")
+            if self.force_dummy:
+                self._conn_label = "시뮬레이션 모드 (--dummy 지정됨)"
+            else:
+                self._conn_label = f"시뮬레이션 모드 (로봇 미연결: {real_error})"
+            self._conn_color = "orange"
+        except Exception as e2:
+            self.ctrl = None
+            self._conn_label, self._conn_color = f"연결 실패: {e2}", "red"
+        self._set_status(self._conn_label, self._conn_color)
+
+    def _init_pose_fields(self):
+        """엔드이펙터 포즈 입력란을 현재(또는 중립) 자세의 FK 값으로 채운다."""
+        if self.ctrl is None:
+            return
+
+        def _run():
+            try:
+                position, rpy_deg = self.ctrl.get_ee_pose()
+            except Exception:
+                return
+
+            def _apply():
+                self._pose_vars["X"].set(round(position[0], 1))
+                self._pose_vars["Y"].set(round(position[1], 1))
+                self._pose_vars["Z"].set(round(position[2], 1))
+                self._pose_vars["Roll"].set(round(rpy_deg[0], 1))
+                self._pose_vars["Pitch"].set(round(rpy_deg[1], 1))
+                self._pose_vars["Yaw"].set(round(rpy_deg[2], 1))
+
+            self.root.after(0, _apply)
+
+        threading.Thread(target=_run, daemon=True).start()
 
     def _init_visualizer(self):
         if not _VIS_AVAILABLE:
@@ -62,7 +107,9 @@ class TeachApp:
         try:
             self.vis = RobotVisualizer(open_browser=True)
             self.vis.set_background(top=(0.6, 0.6, 0.6), bottom=(0.4, 0.4, 0.4))
-            self._set_status(f"연결됨  |  3D 뷰: {self.vis.url}", "green")
+            label = getattr(self, "_conn_label", "연결됨")
+            color = getattr(self, "_conn_color", "green")
+            self._set_status(f"{label}  |  3D 뷰: {self.vis.url}", color)
         except Exception as e:
             self._set_status(f"시각화 초기화 실패: {e}", "orange")
 
@@ -103,6 +150,7 @@ class TeachApp:
         self._build_state_panel(main)
         self._build_control_panel(main)
         self._build_waypoint_panel(main)
+        self._build_direct_control_panel(main)
         self._build_status_bar(main)
 
     def _build_state_panel(self, parent):
@@ -218,12 +266,57 @@ class TeachApp:
         ttk.Button(btn_row, text="삭제",   command=self._delete_point, width=7).pack(side="left", padx=2)
         ttk.Button(btn_row, text="전체삭제", command=self._clear_points, width=9).pack(side="left", padx=2)
 
+    def _build_direct_control_panel(self, parent):
+        frame = ttk.Frame(parent)
+        frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+
+        # ── 엔드이펙터 6D 포즈 제어 ──────────────────────────────────────────
+        pose_frame = ttk.LabelFrame(frame, text=" End-Effector Pose (mm / deg) ", padding=10)
+        pose_frame.grid(row=0, column=0, sticky="ns", padx=(0, 10))
+
+        self._pose_vars: dict[str, tk.DoubleVar] = {}
+        for i, label in enumerate(["X", "Y", "Z", "Roll", "Pitch", "Yaw"]):
+            ttk.Label(pose_frame, text=label, width=6).grid(row=i, column=0, sticky="w", padx=4, pady=2)
+            var = tk.DoubleVar(value=0.0)
+            ttk.Entry(pose_frame, textvariable=var, width=10, justify="right").grid(row=i, column=1, padx=4, pady=2)
+            self._pose_vars[label] = var
+
+        ttk.Label(pose_frame, text="속도 (rad/s)").grid(row=6, column=0, sticky="w", padx=4, pady=(8, 2))
+        self.pose_speed_var = tk.DoubleVar(value=1.0)
+        ttk.Spinbox(pose_frame, from_=0.1, to=3.0, increment=0.1, textvariable=self.pose_speed_var,
+                    width=8, justify="right").grid(row=6, column=1, padx=4, pady=(8, 2))
+
+        self.btn_move_pose = ttk.Button(pose_frame, text="Move to Pose",
+                                        command=self._move_to_pose, width=20)
+        self.btn_move_pose.grid(row=7, column=0, columnspan=2, pady=(8, 0))
+
+        # ── 조인트별 직접 각도 제어 ──────────────────────────────────────────
+        joint_frame = ttk.LabelFrame(frame, text=" Joint Angles (rad) ", padding=10)
+        joint_frame.grid(row=0, column=1, sticky="ns")
+
+        self._joint_target_vars: dict[str, tk.DoubleVar] = {}
+        for r, name in enumerate(JOINT_NAMES):
+            ttk.Label(joint_frame, text=name, width=8).grid(row=r, column=0, sticky="w", padx=4, pady=2)
+            var = tk.DoubleVar(value=0.0)
+            ttk.Entry(joint_frame, textvariable=var, width=10, justify="right").grid(row=r, column=1, padx=4, pady=2)
+            ttk.Button(joint_frame, text="이동", width=6,
+                       command=lambda n=name: self._move_single_joint(n)).grid(row=r, column=2, padx=(4, 0), pady=2)
+            self._joint_target_vars[name] = var
+
+        ttk.Label(joint_frame, text="속도 (rad/s)").grid(
+            row=len(JOINT_NAMES), column=0, sticky="w", padx=4, pady=(8, 2))
+        self.joint_speed_var = tk.DoubleVar(value=1.0)
+        ttk.Spinbox(joint_frame, from_=0.1, to=3.0, increment=0.1, textvariable=self.joint_speed_var,
+                    width=8, justify="right").grid(row=len(JOINT_NAMES), column=1, padx=(4, 0), pady=(8, 2))
+
+        self.btn_move_all_joints = ttk.Button(joint_frame, text="Move All Joints",
+                                              command=self._move_all_joints, width=20)
+        self.btn_move_all_joints.grid(row=len(JOINT_NAMES) + 1, column=0, columnspan=3, pady=(8, 0))
+
     def _build_status_bar(self, parent):
-        self.status_var  = tk.StringVar(value="초기화 중...")
-        self.status_color = tk.StringVar(value="#888")
         bar = ttk.Frame(parent)
-        bar.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(8, 0))
-        self.status_label = tk.Label(bar, textvariable=self.status_var,
+        bar.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(8, 0))
+        self.status_label = tk.Label(bar, text="초기화 중...",
                                      bg="#1e1e1e", fg="#888",
                                      font=("Consolas", 9), anchor="w")
         self.status_label.pack(fill="x")
@@ -416,6 +509,90 @@ class TeachApp:
             self.root.after(0, lambda: self._set_status("재생 완료", "green"))
         self.root.after(0, lambda: self.btn_play.config(state="normal"))
 
+    # ── 직접 제어 (포즈 / 조인트) ─────────────────────────────────────────────
+
+    def _guard_move(self) -> bool:
+        if self.ctrl is None:
+            self._set_status("연결되지 않음", "red")
+            return False
+        if self.freedrive_active:
+            self._toggle_freedrive()
+        return True
+
+    def _move_to_pose(self):
+        if not self._guard_move():
+            return
+        try:
+            position    = [self._pose_vars[k].get() for k in ("X", "Y", "Z")]
+            orientation = [math.radians(self._pose_vars[k].get()) for k in ("Roll", "Pitch", "Yaw")]
+            speed       = self.pose_speed_var.get()
+        except tk.TclError:
+            self._set_status("포즈 값이 올바르지 않습니다", "orange")
+            return
+
+        self.btn_move_pose.config(state="disabled")
+        self._set_status("포즈로 이동 중...", "#7ec8e3")
+
+        def _run():
+            try:
+                self.ctrl.move_pose(position=position, orientation=orientation,
+                                     max_vel=speed, max_acc=speed * 2)
+                self.root.after(0, lambda: self._set_status("포즈 이동 완료", "green"))
+            except Exception as e:
+                msg = str(e)
+                self.root.after(0, lambda: self._set_status(f"포즈 이동 실패: {msg}", "red"))
+            finally:
+                self.root.after(0, lambda: self.btn_move_pose.config(state="normal"))
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def _move_all_joints(self):
+        if not self._guard_move():
+            return
+        try:
+            angles = {name: var.get() for name, var in self._joint_target_vars.items()}
+            speed  = self.joint_speed_var.get()
+        except tk.TclError:
+            self._set_status("조인트 값이 올바르지 않습니다", "orange")
+            return
+
+        self.btn_move_all_joints.config(state="disabled")
+        self._set_status("조인트 이동 중...", "#7ec8e3")
+
+        def _run():
+            try:
+                self.ctrl.move_joints_traj(angles=angles, max_vel=speed, max_acc=speed * 2)
+                self.root.after(0, lambda: self._set_status("조인트 이동 완료", "green"))
+            except Exception as e:
+                msg = str(e)
+                self.root.after(0, lambda: self._set_status(f"조인트 이동 실패: {msg}", "red"))
+            finally:
+                self.root.after(0, lambda: self.btn_move_all_joints.config(state="normal"))
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def _move_single_joint(self, joint_name: str):
+        if not self._guard_move():
+            return
+        try:
+            angle = self._joint_target_vars[joint_name].get()
+            speed = self.joint_speed_var.get()
+        except tk.TclError:
+            self._set_status("조인트 값이 올바르지 않습니다", "orange")
+            return
+
+        self._set_status(f"{joint_name} 이동 중...", "#7ec8e3")
+
+        def _run():
+            try:
+                self.ctrl.move_joint(joint_name, angle, max_vel=speed, max_acc=speed * 2)
+                self.root.after(0, lambda: self._set_status(f"{joint_name} 이동 완료", "green"))
+            except Exception as e:
+                msg = str(e)
+                self.root.after(0, lambda: self._set_status(f"{joint_name} 이동 실패: {msg}", "red"))
+
+        threading.Thread(target=_run, daemon=True).start()
+
     # ── 종료 ─────────────────────────────────────────────────────────────────
 
     def _on_close(self):
@@ -440,4 +617,11 @@ class TeachApp:
 
 
 if __name__ == "__main__":
-    TeachApp().run()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Robot Teach & Playback GUI")
+    parser.add_argument("--dummy", action="store_true",
+                         help="실제 CAN 버스 대신 DummyBus로 시뮬레이션 모드로 시작")
+    args = parser.parse_args()
+
+    TeachApp(force_dummy=args.dummy).run()
