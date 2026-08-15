@@ -313,6 +313,32 @@ class TeachApp:
                                               command=self._move_all_joints, width=20)
         self.btn_move_all_joints.grid(row=len(JOINT_NAMES) + 1, column=0, columnspan=3, pady=(8, 0))
 
+        # ── 중력 보상 ─────────────────────────────────────────────────────────
+        grav_frame = ttk.LabelFrame(frame, text=" Gravity Compensation ", padding=10)
+        grav_frame.grid(row=0, column=2, sticky="ns", padx=(10, 0))
+
+        self.gravity_enabled_var = tk.BooleanVar(value=False)
+        self.btn_gravity = ttk.Button(
+            grav_frame, text="중력 보상 OFF",
+            style="Freedrive.TButton",
+            command=self._toggle_gravity, width=18,
+        )
+        self.btn_gravity.grid(row=0, column=0, columnspan=2, pady=(0, 8))
+
+        ttk.Label(grav_frame, text="배율").grid(row=1, column=0, sticky="w", padx=4, pady=2)
+        self.gravity_scale_var = tk.DoubleVar(value=1.0)
+        scale_spin = ttk.Spinbox(
+            grav_frame, from_=0.0, to=2.0, increment=0.05,
+            textvariable=self.gravity_scale_var, width=8, justify="right",
+            command=self._apply_gravity_scale,
+        )
+        scale_spin.grid(row=1, column=1, padx=4, pady=2)
+        scale_spin.bind("<Return>",   lambda e: self._apply_gravity_scale())
+        scale_spin.bind("<FocusOut>", lambda e: self._apply_gravity_scale())
+
+        ttk.Label(grav_frame, text="1.0 = 100% 보상", foreground="#888",
+                  font=("Consolas", 9)).grid(row=2, column=0, columnspan=2, pady=(4, 0))
+
     def _build_status_bar(self, parent):
         bar = ttk.Frame(parent)
         bar.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(8, 0))
@@ -592,6 +618,39 @@ class TeachApp:
                 self.root.after(0, lambda: self._set_status(f"{joint_name} 이동 실패: {msg}", "red"))
 
         threading.Thread(target=_run, daemon=True).start()
+
+    # ── 중력 보상 ─────────────────────────────────────────────────────────────
+
+    def _toggle_gravity(self):
+        if self.ctrl is None:
+            self._set_status("연결되지 않음", "red")
+            return
+        try:
+            scale = self.gravity_scale_var.get()
+        except tk.TclError:
+            scale = 1.0
+
+        if not self.gravity_enabled_var.get():
+            self.gravity_enabled_var.set(True)
+            self.ctrl.enable_gravity_compensation(scale)
+            self.btn_gravity.config(text="중력 보상 ON", style="FreedriveOn.TButton")
+            self._set_status(f"중력 보상 활성화 (배율 {scale:.2f})", "#7ec8e3")
+        else:
+            self.gravity_enabled_var.set(False)
+            self.ctrl.disable_gravity_compensation()
+            self.btn_gravity.config(text="중력 보상 OFF", style="Freedrive.TButton")
+            self._set_status("중력 보상 비활성화", "#888")
+
+    def _apply_gravity_scale(self):
+        if self.ctrl is None:
+            return
+        try:
+            scale = self.gravity_scale_var.get()
+        except tk.TclError:
+            return
+        self.ctrl.set_gravity_scale(scale)
+        if self.gravity_enabled_var.get():
+            self._set_status(f"중력 보상 배율 변경: {scale:.2f}", "#7ec8e3")
 
     # ── 종료 ─────────────────────────────────────────────────────────────────
 

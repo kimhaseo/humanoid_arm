@@ -279,6 +279,11 @@ class JointController:
         ctrl.set_joints({'joint1': 0.5, 'joint2': -0.3})
         ctrl.disable_all()
         ctrl.shutdown()
+
+        # 중력 보상 (URDF 질량/관성 기반, RNEA)
+        ctrl.enable_gravity_compensation(scale=1.0)   # 켜기 (배율 1.0 = 100% 보상)
+        ctrl.set_gravity_scale(0.5)                   # 배율만 조절 (50% 보상)
+        ctrl.disable_gravity_compensation()           # 끄기
     """
 
     def __init__(
@@ -310,8 +315,11 @@ class JointController:
             for name, jcfg in JOINT_CONFIGS.items()
         }
 
-        self._ik_solver  = self._build_ik_solver(urdf_path)
-        self._visualizer = visualizer
+        self._ik_solver      = self._build_ik_solver(urdf_path)
+        self._gravity_comp   = self._build_gravity_compensator(urdf_path)
+        self.gravity_enabled = False
+        self.gravity_scale   = 1.0
+        self._visualizer     = visualizer
 
         self._stop_event = threading.Event()
         self._rx_thread  = threading.Thread(target=self._rx_loop, daemon=True)
@@ -329,6 +337,11 @@ class JointController:
         from kinematics.ik_solver import IKSolver
         kwargs = {} if urdf_path is None else {"urdf_path": urdf_path}
         return IKSolver(active_joints=list(self.motors.keys()), **kwargs)
+
+    def _build_gravity_compensator(self, urdf_path: str | None):
+        from dynamics.gravity_compensation import GravityCompensator
+        kwargs = {} if urdf_path is None else {"urdf_path": urdf_path}
+        return GravityCompensator(active_joints=list(self.motors.keys()), **kwargs)
 
     def _rx_loop(self):
         while not self._stop_event.is_set():
@@ -372,6 +385,46 @@ class JointController:
     def disable(self, joint_name: str, clear_error: bool = False):
         self.motors[joint_name].disable(clear_error=clear_error)
 
+    # ── 중력 보상 ─────────────────────────────────────────────────────────────
+
+    def enable_gravity_compensation(self, scale: float = 1.0):
+        """
+        중력 보상 활성화. 이후 모든 이동 명령(set_joints/move_joint*)에 URDF
+        질량/관성 기반 RNEA 중력 토크가 feedforward로 자동 추가된다.
+
+        Args:
+            scale: 보상 배율 (1.0 = 100% 보상, 0.5 = 절반만 보상, 0.0 = 무보상)
+        """
+        self.gravity_enabled = True
+        self.gravity_scale   = scale
+        print(f"[JointController] 중력 보상 ON (배율 {scale:.2f})")
+
+    def disable_gravity_compensation(self):
+        """중력 보상 비활성화 (feedforward 토크 0)."""
+        self.gravity_enabled = False
+        print("[JointController] 중력 보상 OFF")
+
+    def set_gravity_scale(self, scale: float):
+        """중력 보상 on/off 상태는 유지한 채 배율만 변경."""
+        self.gravity_scale = scale
+
+    def _current_full_angles(self) -> dict[str, float]:
+        """전체 조인트의 최근 피드백 각도 스냅샷 (중력 토크 계산용 기준 자세)."""
+        return {name: motor.state.angle for name, motor in self.motors.items()}
+
+    def _gravity_feedforward(self, target_angles: dict[str, float]) -> dict[str, float]:
+        """
+        target_angles의 조인트들에 대한 중력 보상 토크 계산.
+        나머지 조인트는 최근 피드백 각도를 그대로 사용해 전체 팔 자세를 구성한다.
+        중력 보상이 꺼져 있으면 빈 dict 반환.
+        """
+        if not self.gravity_enabled:
+            return {}
+        full_angles = self._current_full_angles()
+        full_angles.update(target_angles)
+        tau = self._gravity_comp.gravity_torque(full_angles)
+        return {name: t * self.gravity_scale for name, t in tau.items() if name in target_angles}
+
     # ── MIT 제어 명령 ──────────────────────────────────────────────────────────
 
     def set_joints(
@@ -390,8 +443,10 @@ class JointController:
             speeds:  {'joint1': rad/s, ...} 목표 속도 (기본 0.0)
             kp:      위치 게인 - 단일 float, 조인트별 dict, 또는 None(config 값 사용)
             kd:      속도 게인 - 단일 float, 조인트별 dict, 또는 None(config 값 사용)
-            torques: {'joint1': Nm, ...} feedforward 토크 (기본 0.0)
+            torques: {'joint1': Nm, ...} feedforward 토크 (기본 0.0) — 중력 보상이
+                     켜져 있으면 이 값에 중력 보상 토크가 더해져서 전송된다.
         """
+        grav = self._gravity_feedforward(angles)
         for name, motor in self.motors.items():
             if name not in angles:
                 continue
@@ -400,7 +455,7 @@ class JointController:
                 speed  = (speeds  or {}).get(name, 0.0),
                 kp     = kp.get(name) if isinstance(kp, dict) else kp,
                 kd     = kd.get(name) if isinstance(kd, dict) else kd,
-                torque = (torques or {}).get(name, 0.0),
+                torque = (torques or {}).get(name, 0.0) + grav.get(name, 0.0),
             )
 
     def set_joint(
@@ -413,7 +468,13 @@ class JointController:
         torque: float = 0.0,
     ):
         """단일 조인트 복합 제어 명령 전송. kp/kd 미지정 시 config 값 사용."""
-        self.motors[joint_name].control(angle=angle, speed=speed, kp=kp, kd=kd, torque=torque)
+        self.set_joints(
+            angles  = {joint_name: angle},
+            speeds  = {joint_name: speed},
+            kp      = {joint_name: kp} if kp is not None else None,
+            kd      = {joint_name: kd} if kd is not None else None,
+            torques = {joint_name: torque},
+        )
 
     # ── 영점 설정 ──────────────────────────────────────────────────────────────
 
@@ -554,7 +615,8 @@ class JointController:
             # 절대 시각 기준으로 sleep → 드리프트 누적 방지
             t_next = time.perf_counter()
             for step in range(max_len):
-                step_angles: dict[str, float] = {}
+                step_angles = {name: waypoints[step][0] for name, waypoints in trajs.items()}
+                grav = self._gravity_feedforward(step_angles)
                 for name, waypoints in trajs.items():
                     pos, vel = waypoints[step]
                     self.motors[name].control(
@@ -562,8 +624,8 @@ class JointController:
                         speed  = vel,
                         kp     = _get(kp, name),
                         kd     = _get(kd, name),
+                        torque = grav.get(name, 0.0),
                     )
-                    step_angles[name] = pos
                 if self._visualizer is not None:
                     with self._vis_lock:
                         self._vis_angles = step_angles
