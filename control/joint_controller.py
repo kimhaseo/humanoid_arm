@@ -13,7 +13,7 @@ from motors.robstride_motor_controller import (
     COMM_MOTOR_ENABLE, COMM_MOTOR_STOP, COMM_SET_POS_ZERO,
     COMM_MOTION_CTRL, COMM_MOTOR_REQUEST,
     COMM_SET_PARAM, IDX_RUN_MODE, MODE_MOVE,
-    MASTER_CAN_ID, KP_MIN, KP_MAX, KD_MIN, KD_MAX,
+    MASTER_CAN_ID, P_MIN, P_MAX, KP_MIN, KP_MAX, KD_MIN, KD_MAX,
 )
 from config import get_config
 
@@ -28,7 +28,9 @@ DEFAULT_KD = _cfg.control.default_kd
 
 JOINT_CONFIGS = _cfg.joints  # dict[str, JointConfig]
 
-P_MIN,  P_MAX  = _cfg.motor_limits.p_min,  _cfg.motor_limits.p_max
+# P_MIN/P_MAX는 CAN 프로토콜의 16비트 각도 인코딩 범위 — 실제 모터 펌웨어 스펙에 고정된
+# 값이므로 robstride_motor_controller에서 그대로 가져온다 (config 값으로 바꾸면 안 됨:
+# 인코딩 시 여기 범위로 압축했는데 펌웨어가 -12.5~12.5로 풀면 각도가 실제보다 부풀려진다).
 KP_MIN, KP_MAX = _cfg.motor_limits.kp_min, _cfg.motor_limits.kp_max
 KD_MIN, KD_MAX = _cfg.motor_limits.kd_min, _cfg.motor_limits.kd_max
 

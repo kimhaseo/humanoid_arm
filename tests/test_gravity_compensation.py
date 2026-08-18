@@ -5,7 +5,7 @@
 
 1) GravityCompensator 단독 - 계산된 토크가 물리적으로 말이 되는지 확인.
    URDF 질량/관성이 바뀌면 회귀 기준값도 같이 갱신해야 한다.
-2) JointController + DummyBus 통합 - gravity_gain/gravity_torque_limit이
+2) JointController + DummyBus 통합 - gravity_enabled/gravity_scale이
    실제 CAN 프레임(torque 필드)까지 반영되는지 확인.
 """
 import math
@@ -48,7 +48,7 @@ def _decode_torque(msg, t_min, t_max):
     return uint_to_float(torque_bits, t_min, t_max, 16)
 
 
-def test_gravity_feedforward_reaches_can_frame():
+def test_gravity_disabled_by_default_sends_no_feedforward_torque():
     from canbus.dummy_bus import DummyBus
     from control.joint_controller import JointController, MOTOR_MODELS, JOINT_CONFIGS
 
@@ -56,35 +56,7 @@ def test_gravity_feedforward_reaches_can_frame():
 
     jc = JointController()
     try:
-        jc.set_gravity_gain(1.0)
-
-        angle = 0.4
-        jc.set_joint('joint2', angle)
-
-        jcfg = JOINT_CONFIGS['joint2']
-        msg  = _last_motion_ctrl_frame(jc.bus, jcfg.can_id)
-        spec = MOTOR_MODELS[jcfg.motor_model]
-        sent_torque = _decode_torque(msg, spec.t_min, spec.t_max)
-
-        expected = GravityCompensator(active_joints=list(jc.motors.keys())) \
-            .gravity_torque({'joint2': angle})['joint2']
-        limit = jc._gravity_limit
-        expected_clamped = max(-limit, min(limit, expected))
-
-        assert abs(sent_torque - expected_clamped) < 0.05, (sent_torque, expected_clamped)
-    finally:
-        jc.shutdown()
-
-
-def test_gravity_gain_zero_sends_no_feedforward_torque():
-    from canbus.dummy_bus import DummyBus
-    from control.joint_controller import JointController, MOTOR_MODELS, JOINT_CONFIGS
-
-    _can.interface.Bus = lambda **kwargs: DummyBus()
-
-    jc = JointController()
-    try:
-        assert jc._gravity_gain == 0.0   # config 기본값 — 안전을 위해 항상 꺼진 채 시작
+        assert jc.gravity_enabled is False   # 안전을 위해 항상 꺼진 채 시작
 
         jc.set_joint('joint2', 0.4)
 
@@ -98,7 +70,7 @@ def test_gravity_gain_zero_sends_no_feedforward_torque():
         jc.shutdown()
 
 
-def test_gravity_torque_clamped_to_limit():
+def test_gravity_feedforward_reaches_can_frame():
     from canbus.dummy_bus import DummyBus
     from control.joint_controller import JointController, MOTOR_MODELS, JOINT_CONFIGS
 
@@ -106,17 +78,48 @@ def test_gravity_torque_clamped_to_limit():
 
     jc = JointController()
     try:
-        jc.set_gravity_gain(1.0)
-        jc._gravity_limit = 0.01   # 계산값보다 훨씬 작은 clamp를 강제로 걸어 확인
+        jc.enable_gravity_compensation(scale=1.0)
 
-        jc.set_joint('joint2', 0.4)
+        angle = 0.4
+        jc.set_joint('joint2', angle)
 
         jcfg = JOINT_CONFIGS['joint2']
         msg  = _last_motion_ctrl_frame(jc.bus, jcfg.can_id)
         spec = MOTOR_MODELS[jcfg.motor_model]
         sent_torque = _decode_torque(msg, spec.t_min, spec.t_max)
 
-        assert abs(sent_torque) <= 0.01 + 0.01, sent_torque
+        expected = GravityCompensator(active_joints=list(jc.motors.keys())) \
+            .gravity_torque({'joint2': angle})['joint2']
+        expected_clamped = max(spec.t_min, min(spec.t_max, expected))
+
+        assert abs(sent_torque - expected_clamped) < 0.05, (sent_torque, expected_clamped)
+    finally:
+        jc.shutdown()
+
+
+def test_gravity_scale_reduces_feedforward_torque():
+    from canbus.dummy_bus import DummyBus
+    from control.joint_controller import JointController, MOTOR_MODELS, JOINT_CONFIGS
+
+    _can.interface.Bus = lambda **kwargs: DummyBus()
+
+    jc = JointController()
+    try:
+        jc.enable_gravity_compensation(scale=0.5)
+
+        angle = 0.4
+        jc.set_joint('joint2', angle)
+
+        jcfg = JOINT_CONFIGS['joint2']
+        msg  = _last_motion_ctrl_frame(jc.bus, jcfg.can_id)
+        spec = MOTOR_MODELS[jcfg.motor_model]
+        sent_torque = _decode_torque(msg, spec.t_min, spec.t_max)
+
+        full_tau = GravityCompensator(active_joints=list(jc.motors.keys())) \
+            .gravity_torque({'joint2': angle})['joint2']
+        expected_clamped = max(spec.t_min, min(spec.t_max, full_tau * 0.5))
+
+        assert abs(sent_torque - expected_clamped) < 0.05, (sent_torque, expected_clamped)
     finally:
         jc.shutdown()
 

@@ -7,11 +7,11 @@ can:
 # ── 조인트 → CAN ID 매핑 + 각도 리밋 (단위: deg) ──────────────────────────────
 joints:
   joint1: { can_id: 1, motor_model: RS06, limit_min: -90.0, limit_max:  90.0, kp: 100.0, kd: 0.5, sign:  1 }
-  joint2: { can_id: 2, motor_model: RS06, limit_min: -90.0, limit_max:  10.0, kp: 100.0, kd: 0.5, sign:  1 }
+  joint2: { can_id: 2, motor_model: RS06, limit_min: -10.0, limit_max:  90.0, kp: 100.0, kd: 0.5, sign:  1 }
   joint3: { can_id: 3, motor_model: RS02, limit_min: -90.0, limit_max:  90.0, kp: 100.0, kd: 0.5, sign:  1 }
-  joint4: { can_id: 4, motor_model: RS02, limit_min: -85.0, limit_max:  50.0, kp: 100.0, kd: 0.5, sign:  1 }
+  joint4: { can_id: 4, motor_model: RS02, limit_min: -50.0, limit_max:  85.0, kp: 100.0, kd: 0.5, sign:  1 }
   joint5: { can_id: 5, motor_model: RS00, limit_min: -90.0, limit_max:  90.0, kp: 50.0, kd: 0.5, sign:  1 }
-  joint6: { can_id: 6, motor_model: RS00, limit_min: -90.0, limit_max: 90.0, kp: 50.0, kd: 0.5, sign: 1 }
+  joint6: { can_id: 6, motor_model: RS00, limit_min: -90.0, limit_max: 90.0, kp: 50.0, kd: 0.5, sign: -1 }
   joint7: { can_id: 7, motor_model: RS05, limit_min: -90.0, limit_max:  90.0, kp: 30.0, kd: 0.5, sign:  1 }
 
 
@@ -23,7 +23,6 @@ control:
 
 # ── 모터 물리 한계 (공통) ──────────────────────────────────────────────────────
 motor_limits:
-  position: { min: -3.14, max: 3.14 }    # [rad] 공통
   kp:       { min:   0.0, max: 500.0 }
   kd:       { min:   0.0, max:   5.0 }
 

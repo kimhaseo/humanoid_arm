@@ -21,13 +21,10 @@ class CanConfig:
 class ControlConfig:
     default_kp: float
     default_kd: float
-    gravity_gain: float           # 0(끔)~1(풀보상)
-    gravity_torque_limit: float   # [Nm] 조인트당 clamp
 
 
 @dataclass
 class MotorLimits:
-    p_min: float;  p_max: float
     kp_min: float; kp_max: float
     kd_min: float; kd_max: float
 
@@ -80,8 +77,6 @@ def _load(path: str) -> ArmConfig:
     control_cfg = ControlConfig(
         default_kp=float(ctrl["default_kp"]),
         default_kd=float(ctrl["default_kd"]),
-        gravity_gain=float(ctrl.get("gravity_gain", 0.0)),
-        gravity_torque_limit=float(ctrl.get("gravity_torque_limit", 5.0)),
     )
 
     joints = {
@@ -99,9 +94,8 @@ def _load(path: str) -> ArmConfig:
 
     ml = raw["motor_limits"]
     limits_cfg = MotorLimits(
-        p_min=float(ml["position"]["min"]),  p_max=float(ml["position"]["max"]),
-        kp_min=float(ml["kp"]["min"]),       kp_max=float(ml["kp"]["max"]),
-        kd_min=float(ml["kd"]["min"]),       kd_max=float(ml["kd"]["max"]),
+        kp_min=float(ml["kp"]["min"]), kp_max=float(ml["kp"]["max"]),
+        kd_min=float(ml["kd"]["min"]), kd_max=float(ml["kd"]["max"]),
     )
 
     motor_models = {
